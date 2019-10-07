@@ -63,6 +63,12 @@ Secondly, balenaSound will play connection/disconnection notification sounds at 
 
 **Note:** these variables should be defined as integer values without the `%` symbol.
 
+### Deploy this application
+
+* Install the [balena CLI tools](https://github.com/balena-io/balena-cli/blob/master/INSTALL.md)
+* Login with `balena login`
+* Download this project and from the project directory run `balena push <appName>` where `<appName>` is the name you gave your balenaCloud application in the first step.
+
 ## Connect to the Blue-Speakers
 
 * After the application has pushed and the device has downloaded the latest changes you're ready to go!
