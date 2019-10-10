@@ -7,26 +7,7 @@ fi
 SYSTEM_OUTPUT_VOLUME="${SYSTEM_OUTPUT_VOLUME:-100}"
 echo $SYSTEM_OUTPUT_VOLUME > /usr/src/system_output_volume
 printf "Setting output volume to %s%%\n" "$SYSTEM_OUTPUT_VOLUME"
-
-#ALSA config mixervon usb second card as default if available
-if [[ -f /proc/asound/cards ]]; then
-  let card=$(cat /proc/asound/cards | grep ]: | wc -l)-1
-  case "$card" in
-    0)
-      amixer sset 'PCM',0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
-      export BLUE_SPEAKERS="${BLUE_SPEAKERS:-hw:0,0}"
-      ;;
-    *)
-      echo -e "\
-defaults.pcm.card $card\n\
-defaults.ctl.card $card" | tee /etc/asound.conf
-      amixer sset 'Master',0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
-      export BLUE_SPEAKERS="${BLUE_SPEAKERS:-hw:$card,0}"
-  ;;
-  esac
-fi
-# necessary variable check default behaviour
-BLUE_SPEAKERS=${BLUE_SPEAKERS:-"hw:0,0"}
+amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
 
 # Set the volume of the connection notification sounds here
 CONNECTION_NOTIFY_VOLUME="${CONNECTION_NOTIFY_VOLUME:-100}"
