@@ -35,6 +35,13 @@ rm -rf /var/run/bluealsa/
 sleep 2
 hciconfig hci0 up
 hciconfig hci0 name "$BLUETOOTH_DEVICE_NAME"
+if [ -z "$BLUETOOTH_PIN_CODE" ]; then
+  hciconfig hci0 sspmode 1  # Secure Simple Pairing
+  printf "Starting bluetooth agent in Secure Simple Pairing Mode (SSPM) - No PIN CODE"
+else
+  hciconfig hci0 sspmode 0  # Legacy pairing (PIN CODE)
+  printf "Starting bluetooth agent in Legacy Pairing Mode - PIN CODE is " "$BLUETOOTH_PIN_CODE"
+fi
 
 # Reconnect if there is a known device
 sleep 2
