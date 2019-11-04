@@ -46,8 +46,8 @@ To run this project is as simple as deploying it to a balenaCloud application; n
 ### Deploy this application
 
 * Install the [balena CLI tools](https://github.com/balena-io/balena-cli/blob/master/INSTALL.md)
-* Login with `sudo balena login`
-* Run `./deploy.sh`
+* Login with `balena login`
+* Download this project and from the project directory run `balena push <appName>` where `<appName>` is the name you gave your balenaCloud application in the first step.
 
 ### Customize device name
 
@@ -63,13 +63,12 @@ Secondly, balenaSound will play connection/disconnection notification sounds at 
 
 **Note:** these variables should be defined as integer values without the `%` symbol.
 
-### Deploy this application
+### Set bluetooth pin code
 
-* Install the [balena CLI tools](https://github.com/balena-io/balena-cli/blob/master/INSTALL.md)
-* Login with `balena login`
-* Download this project and from the project directory run `balena push <appName>` where `<appName>` is the name you gave your balenaCloud application in the first step.
+By default, balenaSound bluetooth will connect using Secure Simple Pairing mode with no pin code required. If you would like to override this, you can define the `BLUETOOTH_PIN_CODE` environment variable with the pin code you desire.
 
-## Connect to the Blue-Speakers
+
+## Connect
 
 * After the application has pushed and the device has downloaded the latest changes you're ready to go!
 * Connect the audio output of your Pi to the AUX input on your Hi-Fi or speakers
