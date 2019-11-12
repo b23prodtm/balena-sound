@@ -15,7 +15,7 @@ import dbus.mainloop.glib
 BUS_NAME = 'org.bluez'
 AGENT_INTERFACE = 'org.bluez.Agent1'
 AGENT_PATH = "/test/agent"
-PIN_CODE_SET = os.getenv('BLUETOOTH_PIN_CODE', None)
+LEGACY_MODE = os.getenv('BLUETOOTH_PIN_CODE', None)
 PIN_CODE = os.getenv('BLUETOOTH_PIN_CODE', "0000")
 
 bus = None
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     bus = dbus.SystemBus()
 
-    if PIN_CODE_SET is None:
+    if LEGACY_MODE is None:
         capability = "NoInputNoOutput"
     else:
         capability = "KeyboardDisplay"
