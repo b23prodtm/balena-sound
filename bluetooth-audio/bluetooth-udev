@@ -15,10 +15,16 @@ add)
     printf "discoverable off\npairable off\nexit\n" | bluetoothctl
     mplayer -volume $CONNECTION_NOTIFY_VOLUME /usr/src/sounds/connect.mp3 -really-quiet > /dev/null 2>&1
     amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+    if [[ -n "$BLUETOOTH_CONNECT" ]]; then
+      python /usr/src/udev-python/bluetooth-connect
+    fi
     ;;
 remove)
     mplayer -volume $CONNECTION_NOTIFY_VOLUME /usr/src/sounds/disconnect.mp3 -really-quiet > /dev/null 2>&1
     printf "discoverable on\npairable on\nexit\n" | bluetoothctl
     amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+    if [[ -n "$BLUETOOTH_DISCONNECT" ]]; then
+      python /usr/src/udev-python/bluetooth-disconnect
+    fi
     ;;
 esac
