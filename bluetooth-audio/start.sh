@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+#ALSA conf second card as default driver if available
+if [[ -f /proc/asound/cards ]]; then
+  [[ $(cat /proc/asound/cards | grep "1 \[" 2> /dev/null) ]] && echo -e "\
+defaults.pcm.card 1\n\
+defaults.ctl.card 1" | tee /etc/asound.conf
+fi
+
 if [[ -z "$BLUETOOTH_DEVICE_NAME" ]]; then
   BLUETOOTH_DEVICE_NAME=$(printf "balenaSound %s" $(hostname | cut -c -4))
 fi
