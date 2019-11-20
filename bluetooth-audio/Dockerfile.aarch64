@@ -47,5 +47,4 @@ RUN chmod +x bluetooth-agent
 COPY start.sh .
 RUN chmod +x ./start.sh
 
-# starts an endless play from bluetooth source device
-CMD ["bash", "start.sh"]
+CMD [ "/bin/bash", "/usr/src/start.sh" ]
