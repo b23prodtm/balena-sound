@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/b23prodtm/balena-sound/feature/a2dp-source/images/balenaSound-logo.png)
+![](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/balenaSound-logo.png)
 
 # Bluetooth audio streaming for any audio device
 
@@ -11,12 +11,19 @@ This project has been tested on Raspberry Pi 3B/3B+ and Raspberry Pi Zero W. If 
 * Raspberry Pi 3A+/3B/3B+/Zero W
 * SD Card (we recommend 8GB Sandisk Extreme Pro)
 * Power supply
-* A sound card connected to USB port
-To use the Raspberry Pi as a bluetooth receiver to speakers
-* 3.5mm audio cable to the input on your speakers/Hi-Fi (usually 3.5mm or RCA)
+
+To use the Raspberry Pi, you can choose:
+<!-- toc -->
+- [Connect to the Blue-Speakers](#Connect-to-the-Blue-Speakers)
+  + 3.5mm audio cable to the input on your speakers/Hi-Fi
+- [As a transmitter to bluetooth speakers](#As-a-transmitter-to-bluetooth-speakers):
+  + A sound card connected to the USB port for the loopback
+  + A TosLink optical cable (recommended) or RCA Stereo to the output of your TV Set/Console
+  + A Wireless soundbar or headphones
+<!-- tocstop -->
+To use the dashboard, you must have a personal Github.com account and access to the a broadband Internet connection
 
 **Note:** the Raspberry Pi Zero cannot be used on it's own as it has no audio output. To use the Pi Zero you'll need to add something like the [Pimoroni pHAT DAC](https://shop.pimoroni.com/products/phat-dac) to go with it.
-
 ## Software required
 
 * A download of this project (of course)
@@ -44,7 +51,7 @@ To run this project is as simple as deploying it to a balenaCloud application; n
 
 ### Customize device name
 
-By default, your device will be displayed as `balenaSound xxxx` when you search for Bluetooth devices.
+By default, your device will be displayed as `blue-speakers-pi` when you search for Bluetooth devices.
 You can change this using `BLUETOOTH_DEVICE_NAME` environment variable that can be set in balena dashboard
 (navigate to dashboard -> app -> device -> device variables).
 
@@ -56,17 +63,11 @@ Secondly, balenaSound will play connection/disconnection notification sounds at 
 
 **Note:** these variables should be defined as integer values without the `%` symbol.
 
-### Set bluetooth PIN code
-
-By default, balenaSound bluetooth will connect using Secure Simple Pairing mode. If you would like to override this and use Legacy Mode with a PIN code you can do it by defining the `BLUETOOTH_PIN_CODE` environment variable. The PIN code must be numeric and up to six digits (1 - 999999).
-
-**Note**: Legacy Mode is no longer allowed on [iOS](https://developer.apple.com/accessories/Accessory-Design-Guidelines.pdf) devices.
-
-## Connect to Blue-Speakers
+## Connect to the Blue-Speakers
 
 * After the application has pushed and the device has downloaded the latest changes you're ready to go!
 * Connect the audio output of your Pi to the AUX input on your Hi-Fi or speakers
-* Search for your device (`balenaSound xxxx` name is used by default) on your phone or laptop and pair. `xxxx` will be the first 4 characters of the device ID in the balenaCloud dashboard.
+* Search for your device (`blue-speakers-pi` name is used by default) on your phone or laptop and pair.
 * Let the music play!
 
 This project is in active development so if you have any feature requests or issues please submit them here on GitHub. PRs are welcome, too.
@@ -83,15 +84,15 @@ bluetooth:
   labels:
     io.balena.features.dbus: '1'
 ```
-## Using true wireless speakers
-The classical way of audio streaming to wireless speakers now available to you. You don't have any bluetooth capability on your old set top box?
+## As a transmitter to bluetooth speakers
+The modern way of audio streaming to your new wireless speakers, now available to you. You don't have any bluetooth capability on your old set top box?
 You can definitely use your Raspberry Pi to add a wireless connection to old TV set top boxes, using an USB card (snd_usb_audio). You have to connect from an audio source to the sound card input (either digital, optical or analog jacks). Then Blue-Speakers can pair to your existing bluetooth speakers device. To configure the wireless speakers, adjust the Device Service Variable to your needs.
 
     BTSPEAKER_SINK XX:XX:XX:XX:XX:XX:
 
-Any bluetooth enabled software (phone or tablet settings) may help you to find it. Fill it with the physical Bluetooth address and balenaOS will restard immediatel. You may hear the sound if the device is up and pairable.
+Any bluetooth enabled software (phone or tablet settings) may help you to find it. Fill it with the physical Bluetooth address and balenaOS will restart immediatelly. You may hear the sound if the device is up and pairable.
 
-![Setting the device speaker address](images/device-name-config.png)
+![Setting the device speaker address](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/device-name-config.png)
 
 ## Buffer underruns
   1.If you encounter some buffer underrun while streaming music through the btspeaker, set higher PCM_BUFFER_TIME.
