@@ -20,20 +20,19 @@ RUN install_packages \
   bluez \
   python-gobject \
   python-dbus \
-  python-bluez \
-  libbluetooth-dev \
+  python-gpiozero \
   mplayer
-# RUN [ "cross-build-end" ]
-WORKDIR /usr/src/
 
 # Copy sounds
 COPY sounds sounds
 
-# Setup udev rules - this lets us play the connect/disconnect sound
-# and also turn off discover/pairing when a client is connected
-COPY bluetooth-udev .
-RUN chmod +x bluetooth-udev
+# Setup udev rules - this lets us play the connect/disconnect sound,
+# turn off discover/pairing when a client is connected
+# and also run a python script
+COPY bluetooth-udev /usr/src/
+RUN chmod +x /usr/src/bluetooth-udev
 COPY udev-rules/ /etc/udev/rules.d/
+COPY bluetooth-scripts/ /usr/src/bluetooth-scripts/
 
 # add bluealsa service
 COPY btspeaker* ./
