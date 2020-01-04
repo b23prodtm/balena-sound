@@ -19,7 +19,7 @@ function btspeaker() {
     *)
       printf "devices\npair %s\ntrust %s\nconnect %s\nscan off\nexit" "$1" "$1" "$1" | bluetoothctl
       sed -E "s/(^.*device )([^ ]*)(.*)/\\1\"$1\"\\3/" /usr/src/.asoundrc | tee ~/.asoundrc
-      if [ $(aplay -D bluealsa /usr/share/sounds/alsa/Noise.wav 2> /dev/null) ]; then
+      if [ $(aplay -D bluealsa /usr/share/sounds/alsa/Noise.wav > /dev/null) ]; then
         btspeaker $*
       fi
       ;;
