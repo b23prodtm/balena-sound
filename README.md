@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/balena-io-projects/balena-sound/master/images/balenaSound-logo.png)
+![](https://raw.githubusercontent.com/b23prodtm/balena-sound/feature/a2dp-source/images/balenaSound-logo.png)
 
 # Bluetooth audio streaming for any audio device
 
@@ -11,6 +11,8 @@ This project has been tested on Raspberry Pi 3B/3B+ and Raspberry Pi Zero W. If 
 * Raspberry Pi 3A+/3B/3B+/Zero W
 * SD Card (we recommend 8GB Sandisk Extreme Pro)
 * Power supply
+* A sound card connected to USB port
+To use the Raspberry Pi as a bluetooth receiver to speakers
 * 3.5mm audio cable to the input on your speakers/Hi-Fi (usually 3.5mm or RCA)
 
 **Note:** the Raspberry Pi Zero cannot be used on it's own as it has no audio output. To use the Pi Zero you'll need to add something like the [Pimoroni pHAT DAC](https://shop.pimoroni.com/products/phat-dac) to go with it.
@@ -38,15 +40,13 @@ To run this project is as simple as deploying it to a balenaCloud application; n
 
 * Install the [balena CLI tools](https://github.com/balena-io/balena-cli/blob/master/INSTALL.md)
 * Login with `balena login`
-* Download this project and from the project directory run `balena push <appName>` where `<appName>` is the name you gave your balenaCloud application in the first step.
+* Run `./deploy.sh`
 
 ### Customize device name
 
 By default, your device will be displayed as `balenaSound xxxx` when you search for Bluetooth devices.
 You can change this using `BLUETOOTH_DEVICE_NAME` environment variable that can be set in balena dashboard
 (navigate to dashboard -> app -> device -> device variables).
-
-![Setting the device name](images/device-name-config.png)
 
 ### Set output volumes
 
@@ -58,11 +58,11 @@ Secondly, balenaSound will play connection/disconnection notification sounds at 
 
 ### Set bluetooth PIN code
 
-By default, balenaSound bluetooth will connect using Secure Simple Pairing mode. If you would like to override this and use Legacy Mode with a PIN code you can do it by defining the `BLUETOOTH_PIN_CODE` environment variable. The PIN code must be numeric and up to six digits (1 - 999999). 
+By default, balenaSound bluetooth will connect using Secure Simple Pairing mode. If you would like to override this and use Legacy Mode with a PIN code you can do it by defining the `BLUETOOTH_PIN_CODE` environment variable. The PIN code must be numeric and up to six digits (1 - 999999).
 
 **Note**: Legacy Mode is no longer allowed on [iOS](https://developer.apple.com/accessories/Accessory-Design-Guidelines.pdf) devices.
 
-## Connect
+## Connect to Blue-Speakers
 
 * After the application has pushed and the device has downloaded the latest changes you're ready to go!
 * Connect the audio output of your Pi to the AUX input on your Hi-Fi or speakers
@@ -83,3 +83,29 @@ bluetooth:
   labels:
     io.balena.features.dbus: '1'
 ```
+## Using true wireless speakers
+The classical way of audio streaming to wireless speakers now available to you. You don't have any bluetooth capability on your old set top box?
+You can definitely use your Raspberry Pi to add a wireless connection to old TV set top boxes, using an USB card (snd_usb_audio). You have to connect from an audio source to the sound card input (either digital, optical or analog jacks). Then Blue-Speakers can pair to your existing bluetooth speakers device. To configure the wireless speakers, adjust the Device Service Variable to your needs.
+
+    BTSPEAKER_SINK XX:XX:XX:XX:XX:XX:
+
+Any bluetooth enabled software (phone or tablet settings) may help you to find it. Fill it with the physical Bluetooth address and balenaOS will restard immediatel. You may hear the sound if the device is up and pairable.
+
+![Setting the device speaker address](images/device-name-config.png)
+
+## Buffer underruns
+  1.If you encounter some buffer underrun while streaming music through the btspeaker, set higher PCM_BUFFER_TIME.
+Another original way exists, to optimize the bluetooth (hci0) serial communication, by switching on console hands-off.
+  2.By default, Raspberry Pi attaches /dev/ttyAMA0 Serial UART to use with the console.
+So, first disable read-only rootfs on Host:
+
+    mount -o remount,rw /
+
+Then mask the serial getty service:
+
+    systemctl mask serial-getty@serial0.service
+
+Then reboot the board and you should be all set.
+
+## Work-in-progress
+You may find it difficult to synchronize pictures with the sound if you're watching a film. That's because of the CPU usage that requires as high values as 200-300ms to get stable audio streaming. We 're looking for solutions to decrease the amount of time needed in PCM_BUFFER_TIME.
