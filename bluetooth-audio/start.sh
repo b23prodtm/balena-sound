@@ -1,12 +1,4 @@
 #!/usr/bin/env bash
-
-#ALSA conf second card as default driver if available
-if [[ -f /proc/asound/cards ]]; then
-  [[ $(cat /proc/asound/cards | grep "1 \[" 2> /dev/null) ]] && echo -e "\
-defaults.pcm.card 1\n\
-defaults.ctl.card 1" | tee /etc/asound.conf
-fi
-
 if [[ -z "$BLUETOOTH_DEVICE_NAME" ]]; then
   BLUETOOTH_DEVICE_NAME=$(printf "balenaSound %s" $(hostname | cut -c -4))
 fi
@@ -15,7 +7,19 @@ fi
 SYSTEM_OUTPUT_VOLUME="${SYSTEM_OUTPUT_VOLUME:-100}"
 echo $SYSTEM_OUTPUT_VOLUME > /usr/src/system_output_volume
 printf "Setting output volume to %s%%\n" "$SYSTEM_OUTPUT_VOLUME"
-amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+
+#ALSA config mixervon usb second card as default if available
+if [[ -f /proc/asound/cards ]] && [[ $(cat /proc/asound/cards | grep "1 \[" 2> /dev/null) ]]; then
+  echo -e "\
+defaults.pcm.card 1\n\
+defaults.ctl.card 1" | tee /etc/asound.conf
+  amixer sset 'Master',0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+  play="${BTSPEAKER_INPUT:-hw:1,0}"
+else
+  amixer sset 'PCM',0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+  play="${BTSPEAKER_INPUT:-hw:0,0}"
+fi
+
 
 # Set the volume of the connection notification sounds here
 CONNECTION_NOTIFY_VOLUME="${CONNECTION_NOTIFY_VOLUME:-75}"
@@ -37,8 +41,6 @@ printf "discoverable on\npairable on\nexit\n" | bluetoothctl > /dev/null
 /usr/src/bluetooth-agent &
 
 sleep 2
-rm -rf /var/run/bluealsa/
-/usr/bin/bluealsa -i hci0 -p a2dp-sink &
 
 hciconfig hci0 up
 hciconfig hci0 name "$BLUETOOTH_DEVICE_NAME"
@@ -51,6 +53,11 @@ else
   printf "Starting bluetooth agent in Secure Simple Pairing Mode (SSPM) - No PIN code provided or invalid\n"
 fi
 
+sleep 2
+printf "Restarting bluealsa daemon\n"
+rm -rf /var/run/bluealsa/
+/usr/bin/bluealsa -i hci0 -p a2dp-source -p a2dp-sink &
+
 # Reconnect if there is a known device
 sleep 2
 if [ -f "/var/cache/bluetooth/reconnect_device" ]; then
@@ -60,5 +67,10 @@ if [ -f "/var/cache/bluetooth/reconnect_device" ]; then
 fi
 
 sleep 2
+printf "Enable btspeaker service %s...\n" "$BTSPEAKER_SINK"
+./btspeaker.sh -t $PCM_BUFFER_TIME $BTSPEAKER_SINK &
+
+aplay -l
+printf "Bluealsa sends to %s sound card..." "$play"
 printf "Device is discoverable as \"%s\"\n" "$BLUETOOTH_DEVICE_NAME"
-/usr/bin/bluealsa-aplay --pcm-buffer-time=1000000 00:00:00:00:00:00
+/usr/bin/bluealsa-aplay --pcm-buffer-time=$PCM_BUFFER_TIME -d ${play} 00:00:00:00:00:00
