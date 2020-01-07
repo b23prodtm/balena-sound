@@ -1,6 +1,6 @@
 ![](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/balenaSound-logo.png)
 
-# Bluetooth audio streaming for any audio device
+# Bluetooth audio streaming for multimedia players
 
 **Starter project enabling you to add bluetooth audio streaming to any old speakers or Hi-Fi using just a Raspberry Pi.**
 
