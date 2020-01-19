@@ -1,6 +1,6 @@
 ![](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/balenaSound-logo.png)
 
-# Bluetooth audio streaming for multimedia players
+# Bluetooth audio streaming for any audio device
 
 **Starter project enabling you to add bluetooth audio streaming to any old speakers or Hi-Fi using just a Raspberry Pi.**
 
@@ -88,25 +88,25 @@ bluetooth:
 The modern way of audio streaming to your new wireless speakers, now available to you. You don't have any bluetooth capability on your old set top box?
 You can definitely use your Raspberry Pi to add a wireless connection to old TV set top boxes, using an USB card (snd_usb_audio). You have to connect from an audio source to the sound card input (either digital, optical or analog jacks). Then Blue-Speakers can pair to your existing bluetooth speakers device. To configure the wireless speakers, adjust the Device Service Variable to your needs.
 
-    BTSPEAKER_SINK XX:XX:XX:XX:XX:XX:
+    BTSPEAKER_SINK XX:XX:XX:XX:XX:XX
 
-Any bluetooth enabled software (phone or tablet settings) may help you to find it. Fill it with the physical Bluetooth address and balenaOS will restart immediatelly. You may hear the sound if the device is up and pairable.
+Any bluetooth enabled OS may help you to find hexadecimal physical address. Fill it with the physical Bluetooth address of the speakers and balenaOS will restart immediatelly. You may hear the sound if the device is up and paired with the Raspberry Pi.
 
 ![Setting the device speaker address](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/device-name-config.png)
 
 ## Buffer underruns
   1.If you encounter some buffer underrun while streaming music through the btspeaker, set higher PCM_BUFFER_TIME.
 Another original way exists, to optimize the bluetooth (hci0) serial communication, by switching on console hands-off.
-  2.By default, Raspberry Pi attaches /dev/ttyAMA0 Serial UART to use with the console.
-So, first disable read-only rootfs on Host:
+  2.By default, Raspberry Pi attaches /dev/ttyAMA0 Serial UART to use with the console. To disable from CLI, follow the instructions below.
+>So, first disable read-only rootfs on Host:
 
     mount -o remount,rw /
 
-Then mask the serial getty service:
+>Then mask the serial getty service:
 
     systemctl mask serial-getty@serial0.service
 
 Then reboot the board and you should be all set.
-
+  2b. On Raspbian OS, ```raspiconfig``` can disable Serial Console from the interactive configuration panel.
 ## Work-in-progress
 You may find it difficult to synchronize pictures with the sound if you're watching a film. That's because of the CPU usage that requires as high values as 200-300ms to get stable audio streaming. We 're looking for solutions to decrease the amount of time needed in PCM_BUFFER_TIME.
