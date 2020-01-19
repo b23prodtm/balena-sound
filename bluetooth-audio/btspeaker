@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -e
+PCM_BUFFER_TIME=${PCM_BUFFER_TIME:-300000}
+MAC_ADDRESS=${BTSPEAKER_SINK:-00:00:00:00:00:00}
+export BT_IDLE=0x10 \
+BT_SCAN=0x2 \
+BT_PAIR=0x4 \
+BT_PLAY=0x8 \
+BT_ERRO=0x1 \
+BT_STATUS=0x2
+
+while [ "$#" -gt 0 ]; do case $1 in
+  -[tT]*)
+    shift; PCM_BUFFER_TIME=$1;;
+  -[hH]*)
+    echo -e "Usage: $0 [-t <PCM_BUFFER_TIME>] [device HCI]" && exit 0;;
+  *)
+    MAC_ADDRESS=$1;;
+esac; shift; done
+# loop until valid connection was found
+# scan and pair on sink "bluetooth speaker" device
+function btspeaker() {
+  if [ $(($BT_STATUS & $BT_ERRO)) -ne 0 ]; then
+    export BT_STATUS=$(($BT_STATUS >> 1))
+  fi
+  sleep 1
+  if [ $(($BT_STATUS & $BT_SCAN)) -ne 0 ]; then
+    printf "Waiting for speakers %s...\n" "$1"
+    ./btspeaker.py -t 10 $1
+  elif [ $(($BT_STATUS & $BT_PAIR)) -ne 0 ]; then
+    echo "bluetoothctl reconnect..."
+    printf "devices\npair %s\ntrust %s\nconnect %s\nexit\n" "$1" "$1" "$1" | bluetoothctl
+  elif [ $(($BT_STATUS & $BT_PLAY)) -ne 0 ]; then
+    sed -E "s/(^.*device )([^ ]*)(.*)/\\1\"$1\"\\3/" /usr/src/.asoundrc | tee ~/.asoundrc
+    aplay -D bluealsa sounds/connect.wav
+  elif [ $(($BT_STATUS & $BT_IDLE)) -ne 0 ]; then
+    return 0
+  fi
+  if [ $? -eq 0 ]; then
+    export BT_STATUS=$(($BT_STATUS << 1))
+  else
+    echo "Failed $?"
+    export BT_STATUS=$(($BT_STATUS & $BT_ERRO))
+  fi
+  btspeaker $*
+}
+btspeaker $MAC_ADDRESS
+# loopback snd_usb_audio to blue-speaker
+arecord -l
+BTSPEAKER_INPUT=${BTSPEAKER_INPUT:-"hw:1,0"}
+printf "Alsa sound loop from BTSPEAKER_INPUT=%s." "${BTSPEAKER_INPUT}"
+function keepalive() {
+  myprocess=$1
+  shift
+  mycmd=$*
+  mylog="/tmp/balena/$myprocess.log"
+  case "$(pidof $myprocess | wc -w)" in
+    0)  printf "Keep alive pid %s %s:\nerrors log: %s" "$myprocess" "$mycmd" "$mylog"
+        $myprocess $mycmd 2> $mylog &
+        ;;
+    1)  # all ok but check mylog for errors
+        if [[ $(wc -l $mylog | awk '{print $1}') -ne 0 ]]; then
+          printf "Errors were caught, retry %s" "$myprocess"
+          kill -9 $(pidof $myprocess | awk '{print $1}') &
+          tail -n1 $mylog
+          tee $mylog < /dev/null
+        fi;;
+    *)  printf "Removed double %s %s" "$myprocess" "$mycmd"
+        kill -9 $(pidof $myprocess | awk '{print $1}') &
+      ;;
+  esac;
+  sleep 1
+  keepalive $myprocess $mycmd
+}
+
+keepalive alsaloop -P bluealsa -t $PCM_BUFFER_TIME -C $BTSPEAKER_INPUT --sync=5 -A5 -b
