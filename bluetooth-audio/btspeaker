@@ -48,24 +48,23 @@ btspeaker $MAC_ADDRESS
 # loopback snd_usb_audio to blue-speaker
 arecord -l
 BTSPEAKER_INPUT=${BTSPEAKER_INPUT:-"hw:1,0"}
-printf "Alsa sound loop from BTSPEAKER_INPUT=%s." "${BTSPEAKER_INPUT}"
+printf "Alsa sound loop from BTSPEAKER_INPUT=%s.\n" "${BTSPEAKER_INPUT}"
 function keepalive() {
   myprocess=$1
   shift
   mycmd=$*
   mylog="/tmp/balena/$myprocess.log"
   case "$(pidof $myprocess | wc -w)" in
-    0)  printf "Keep alive pid %s %s:\nerrors log: %s" "$myprocess" "$mycmd" "$mylog"
+    0)  printf " + Keep alive pid %s %s:\n redirect error output: %s\n" "$myprocess" "$mycmd" "$mylog"
         $myprocess $mycmd 2> $mylog &
         ;;
     1)  # all ok but check mylog for errors
         if [[ $(wc -l $mylog | awk '{print $1}') -ne 0 ]]; then
-          printf "Errors were caught, retry %s" "$myprocess"
+          printf " - Unhandled errors were caught up.\n%s" "$(tail -n1 $mylog)"
           kill -9 $(pidof $myprocess | awk '{print $1}') &
-          tail -n1 $mylog
-          tee $mylog < /dev/null
+          exit 1
         fi;;
-    *)  printf "Removed double %s %s" "$myprocess" "$mycmd"
+    *)  printf " x Removed double pid %s %s\n" "$myprocess" "$mycmd"
         kill -9 $(pidof $myprocess | awk '{print $1}') &
       ;;
   esac;

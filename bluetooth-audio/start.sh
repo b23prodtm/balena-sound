@@ -73,7 +73,7 @@ fi
 sleep 2
 # Fork pid (&) btspeaker and force device (bluealsa) to shutdown if speaker connection was lost (kill bluealsa-aplay)
 printf "Enable btspeaker service %s...\n" "$BTSPEAKER_SINK"
-./btspeaker -t $PCM_BUFFER_TIME $BTSPEAKER_SINK && kill -9 $(pidof bluealsa-aplay | awk '{print $1}') &
+./btspeaker -t $PCM_BUFFER_TIME $BTSPEAKER_SINK || kill -9 $(pidof bluealsa-aplay | awk '{print $1}') &
 
 aplay -l
 printf "Bluealsa sends to %s sound card..." "$play"
