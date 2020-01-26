@@ -60,8 +60,9 @@ function keepalive() {
   mycmd=$*
   mylog="/tmp/balena/$myprocess.log"
   case "$(pidof $myprocess | wc -w)" in
-    0)  printf " + Keep alive pid %s %s:\n redirect error output: %s\n" "$myprocess" "$mycmd" "$mylog"
-        $myprocess $mycmd 2> $mylog &
+    0)  printf " + Keep alive pid %s %s:\n redirect all output: %s\n" "$myprocess" "$mycmd" "$mylog"
+        $myprocess $mycmd > $mylog 2>&1 &
+        #$myprocess $mycmd 2> $mylog &
         ;;
     1)  # all ok but check mylog for errors
         if [[ $(wc -l $mylog | awk '{print $1}') -ne 0 ]]; then
