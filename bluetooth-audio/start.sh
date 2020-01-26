@@ -1,12 +1,4 @@
 #!/usr/bin/env bash
-
-#ALSA conf second card as default driver if available
-if [[ -f /proc/asound/cards ]]; then
-  [[ $(cat /proc/asound/cards | grep "1 \[" 2> /dev/null) ]] && echo -e "\
-defaults.pcm.card 1\n\
-defaults.ctl.card 1" | tee /etc/asound.conf
-fi
-
 if [[ -z "$BLUETOOTH_DEVICE_NAME" ]]; then
   BLUETOOTH_DEVICE_NAME=$(printf "balenaSound %s" $(hostname | cut -c -4))
 fi
@@ -15,10 +7,29 @@ fi
 SYSTEM_OUTPUT_VOLUME="${SYSTEM_OUTPUT_VOLUME:-100}"
 echo $SYSTEM_OUTPUT_VOLUME > /usr/src/system_output_volume
 printf "Setting output volume to %s%%\n" "$SYSTEM_OUTPUT_VOLUME"
-amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+
+#ALSA config mixervon usb second card as default if available
+if [[ -f /proc/asound/cards ]]; then
+  let card=$(cat /proc/asound/cards | grep ]: | wc -l)-1
+  case "$card" in
+    0)
+      amixer sset 'PCM',0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+      export BLUE_SPEAKERS="${BLUE_SPEAKERS:-hw:0,0}"
+      ;;
+    *)
+      echo -e "\
+defaults.pcm.card $card\n\
+defaults.ctl.card $card" | tee /etc/asound.conf
+      amixer sset 'Master',0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+      export BLUE_SPEAKERS="${BLUE_SPEAKERS:-hw:$card,0}"
+  ;;
+  esac
+fi
+# necessary variable check default behaviour
+BLUE_SPEAKERS=${BLUE_SPEAKERS:-"hw:0,0"}
 
 # Set the volume of the connection notification sounds here
-CONNECTION_NOTIFY_VOLUME="${CONNECTION_NOTIFY_VOLUME:-75}"
+CONNECTION_NOTIFY_VOLUME="${CONNECTION_NOTIFY_VOLUME:-100}"
 echo $CONNECTION_NOTIFY_VOLUME > /usr/src/connection_notify_volume
 printf "Connection notify volume is %s%%\n" "$CONNECTION_NOTIFY_VOLUME"
 
@@ -38,8 +49,9 @@ printf "discoverable on\npairable on\nexit\n" | bluetoothctl > /dev/null
 
 sleep 2
 rm -rf /var/run/bluealsa/
-/usr/bin/bluealsa -i hci0 -p a2dp-sink &
+/usr/bin/bluealsa -i hci0 -p a2dp-source -p a2dp-sink &
 
+sleep 2
 hciconfig hci0 up
 hciconfig hci0 name "$BLUETOOTH_DEVICE_NAME"
 
@@ -60,5 +72,11 @@ if [ -f "/var/cache/bluetooth/reconnect_device" ]; then
 fi
 
 sleep 2
+# Fork pid (&) btspeaker and force device (bluealsa) to shutdown if speaker connection was lost (kill bluealsa-aplay)
+printf "Enable btspeaker service %s...\n" "$BTSPEAKER_SINK"
+./btspeaker -t $PCM_BUFFER_TIME $BTSPEAKER_SINK || kill -9 $(pidof bluealsa-aplay | awk '{print $1}') &
+
+aplay -l
+printf "Bluealsa plays %s to BLUE_SPEAKERS=%s..." "$play" "$BLUE_SPEAKERS"
 printf "Device is discoverable as \"%s\"\n" "$BLUETOOTH_DEVICE_NAME"
-/usr/bin/bluealsa-aplay --pcm-buffer-time=1000000 00:00:00:00:00:00
+/usr/bin/bluealsa-aplay --pcm-buffer-time=$PCM_BUFFER_TIME -d $BLUE_SPEAKERS 00:00:00:00:00:00
