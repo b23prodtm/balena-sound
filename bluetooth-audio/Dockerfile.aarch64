@@ -20,6 +20,7 @@ RUN install_packages \
   bluez \
   python-gobject \
   python-dbus \
+  python-gpiozero \
   python-bluez \
   libbluetooth-dev \
   mplayer
@@ -34,6 +35,7 @@ COPY sounds sounds
 COPY bluetooth-udev .
 RUN chmod +x bluetooth-udev
 COPY udev-rules/ /etc/udev/rules.d/
+COPY bluetooth-scripts/ /usr/src/bluetooth-scripts/
 
 # add bluealsa service
 COPY btspeaker* ./
@@ -47,5 +49,4 @@ RUN chmod +x bluetooth-agent
 COPY start.sh .
 RUN chmod +x ./start.sh
 
-# starts an endless play from bluetooth source device
-CMD ["bash", "start.sh"]
+CMD [ "/bin/bash", "/usr/src/start.sh" ]

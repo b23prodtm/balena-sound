@@ -79,4 +79,4 @@ printf "Enable btspeaker service %s...\n" "$BTSPEAKER_SINK"
 aplay -l
 printf "Bluealsa plays %s to BLUE_SPEAKERS=%s..." "$play" "$BLUE_SPEAKERS"
 printf "Device is discoverable as \"%s\"\n" "$BLUETOOTH_DEVICE_NAME"
-/usr/bin/bluealsa-aplay --pcm-buffer-time=$PCM_BUFFER_TIME -d $BLUE_SPEAKERS 00:00:00:00:00:00
+exec /usr/bin/bluealsa-aplay --pcm-buffer-time=$PCM_BUFFER_TIME -d $BLUE_SPEAKERS 00:00:00:00:00:00
