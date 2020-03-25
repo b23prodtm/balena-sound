@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # This sript runs, when your pi connects to a bluetooth device and BLUETOOTH_CONNECT is set to anything.
 # You can add your own code. BalenaSound has gpiozero installed so you can work with it.
 # Here is a example:
@@ -10,4 +10,3 @@
 
 # led.off()
 # sleep(1)
-

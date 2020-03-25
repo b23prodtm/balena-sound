@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-set -e
 PCM_BUFFER_TIME=${PCM_BUFFER_TIME:-300000}
-MAC_ADDRESS=${BTSPEAKER_SINK:-00:00:00:00:00:00}
+MAC_ADDRESS=${BTSPEAKER_SINK:-$TRUSTED_MAC_ADDRESS}
 export BT_IDLE=0x10 \
 BT_SCAN=0x2 \
 BT_CONNECT=0x4 \
@@ -22,15 +21,21 @@ esac; shift; done
 function btspeaker() {
   if [ $(($BT_STATUS & $BT_ERRO)) -ne 0 ]; then
     if [ $(($BT_STATUS & $BT_CONNECT)) -ne 0 ]; then
-      # reset TRUSTED_MAC_ADDRESS
-      printf "untrust %s\nremove %s\nexit\n" "$1" "$1" | bluetoothctl
+      export TRUSTED_MAC_ADDRESS=""
+      if [ "${TRUSTED_MAC_ADDRESS}" != "$1" ]; then
+        printf "untrust %s\nremove %s\nexit\n" "$1" "$1" | bluetoothctl
+      fi
     fi
-      export BT_STATUS=$(($BT_STATUS >> 1))
+    export BT_STATUS=$(($BT_STATUS >> 1))
   fi
   sleep 1
   if [ $(($BT_STATUS & $BT_SCAN)) -ne 0 ]; then
     printf "Bluetooth speakers %s...\n" "$1"
-    ./btspeaker.py -d 10 $1
+    if [ "${TRUSTED_MAC_ADDRESS}" != "$1" ]; then
+      ./btspeaker.py -d 10 $1
+    else
+      printf "$1 ready to connect."
+    fi
   elif [ $(($BT_STATUS & $BT_CONNECT)) -ne 0 ]; then
     printf "Bluetooth connect...\n"
     printf "devices\ntrust %s\nconnect %s\nexit\n" "$1" "$1" | bluetoothctl
@@ -39,6 +44,8 @@ function btspeaker() {
     aplay -D bluealsa sounds/connect.wav
   elif [ $(($BT_STATUS & $BT_IDLE)) -ne 0 ]; then
     return 0
+  else
+    export BT_STATUS=0x1
   fi
   if [ $? -eq 0 ]; then
     export BT_STATUS=$(($BT_STATUS << 1))
@@ -52,8 +59,8 @@ btspeaker $MAC_ADDRESS
 # loopback snd_usb_audio to blue-speaker
 arecord -l
 # necessary variable check default behaviour
-BLUE_SPEAKERS=${BLUE_SPEAKERS:-"hw:1,0"}
-printf "Alsa sound loop from BLUE_SPEAKERS=%s.\n" "${BLUE_SPEAKERS}"
+BLUE_SPEAKERS=${BLUE_SPEAKERS:-"hw:1"}
+printf "Alsa sound loop from BLUE_SPEAKERS=%s.\n" "${BLUE_SPEAKERS},0"
 function keepalive() {
   myprocess=$1
   shift
@@ -62,8 +69,10 @@ function keepalive() {
   case "$(pidof $myprocess | wc -w)" in
     0)  printf " + Keep alive pid %s %s:\n redirect all output: %s\n" "$myprocess" "$mycmd" "$mylog"
         $myprocess $mycmd > $mylog 2>&1 &
-        #$myprocess $mycmd 2> $mylog &
-        ;;
+        sleep 1
+        if [ $(pidof $myprocess | wc -w) -eq 0 ]; then
+          exit 1
+        fi;;
     1)  # all ok but check mylog for errors
         if [[ $(wc -l $mylog | awk '{print $1}') -ne 0 ]]; then
           printf " - Unhandled errors were caught up.\n%s\n" "$(tail -n1 $mylog)"
@@ -78,4 +87,4 @@ function keepalive() {
   keepalive $myprocess $mycmd
 }
 
-keepalive alsaloop -P bluealsa -t $PCM_BUFFER_TIME -C $BLUE_SPEAKERS --sync=5 -A5 -b
+keepalive alsaloop -P bluealsa -t $PCM_BUFFER_TIME -C $BLUE_SPEAKERS,0 --sync=5 -A5 -b

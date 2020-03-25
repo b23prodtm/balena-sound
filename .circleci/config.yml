@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       # using custom image, see .circleci/images/primary/Dockerfile
-      - image: circleci/python
+      - image: circleci/python:3
     #An image that’s based on Alpine Linux (like docker), uses the ash shell.
     #shell: /bin/sh -leo pipefail
     environment:

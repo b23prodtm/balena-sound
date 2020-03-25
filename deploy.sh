@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+scriptd=$(dirname ${BASH_SOURCE[0]})
 setMARKERS(){
   export MARK_BEGIN="$1"
   export MARK_END="$2"
@@ -32,8 +34,8 @@ while [ true ]; do
       ;;
   esac
 done
-ln -vsf ${arch}.env .env
-eval $(cat ${arch}.env)
+ln -vsf $scriptd/${arch}.env .env
+eval $(cat $scriptd/${arch}.env)
 function setArch() {
   while [ "$#" -gt 1 ]; do
     cp -f $1 $1.old
@@ -42,16 +44,18 @@ function setArch() {
     -e "s/(DKR_ARCH[=:-]+)[^\$ }]+/\\1${DKR_ARCH}/g" \
     -e "s/(IMG_TAG[=:-]+)[^\$ }]+/\\1${IMG_TAG}/g" \
     -e "s/(PHP_OWNER[=:-]+)[^\$ }]+/\\1${PHP_OWNER}/g" \
-    -e "s/(BLUE_SPEAKERS[=:-]+)[^\$ }]+/\\1${BLUE_SPEAKERS}/g" \
-    $1 | tee $2
+    $1 | tee $2 > /dev/null
   shift; shift; done
 }
-setArch docker-compose.yml docker-compose.${DKR_ARCH}
-declare -a projects=("python-wifi-connect" "bluetooth-audio" "airplay" "spotify" ".circleci/images/primary")
+setArch $scriptd/docker-compose.yml $scriptd/docker-compose.${DKR_ARCH}
+declare -a projects=("python-wifi-connect" "python-bt-connect" "bluetooth-audio" "airplay" "spotify" "deployment/images/primary")
 for d in ${projects[@]}; do
-  setArch $d/Dockerfile.template $d/Dockerfile.${DKR_ARCH}
+  setArch $scriptd/$d/Dockerfile.template $scriptd/$d/Dockerfile.${DKR_ARCH}
+  pwd=`pwd` && cd $scriptd/$d 
+  git commit -a -m "${DKR_ARCH} pushed to balena.io" || true
+  cd $pwd
 done
-eval $(cat ${arch}.env | grep BALENA_MACHINE_NAME)
+eval $(cat $scriptd/${arch}.env | grep BALENA_MACHINE_NAME)
 while [ true ]; do
   eval $(ssh-agent)
   ssh-add ~/.ssh/*id_rsa
@@ -59,12 +63,12 @@ while [ true ]; do
     1|--local)
       echo "Allow cross-build"
       for d in ${projects[@]}; do
-        uncomment $d/Dockerfile.${DKR_ARCH}
+        [ "$arch" != "amd64" ] && uncomment $scriptd/$d/Dockerfile.${DKR_ARCH} || comment $scriptd/$d/Dockerfile.${DKR_ARCH}
       done
       [ $(which balena) > /dev/null ] && declare -a apps=($(sudo balena scan | awk '/address:/{print $2}'))
       i="1..${#apps}"; echo "$i: ${apps[@]}"
       read -p "Where do you want to push [1-${#apps}] ? " appName
-      if [ $(sudo which balena) > /dev/null ]; then
+      if [ $(which balena) > /dev/null ]; then
         sudo balena push ${apps[$appName-1]}
       else
         git push -uf balena ${apps[$appName-1]}
@@ -73,24 +77,36 @@ while [ true ]; do
     4|--docker)
       echo "Allow cross-build"
       for d in ${projects[@]}; do
-        uncomment $d/Dockerfile.${DKR_ARCH}
+        [ "$arch" != "amd64" ] && uncomment $scriptd/$d/Dockerfile.${DKR_ARCH} || comment $scriptd/$d/Dockerfile.${DKR_ARCH}
       done
-      bash -c "docker-compose -f docker-compose.${DKR_ARCH} --host ${DOCKER_HOST:-''} build"
+      file=docker-compose.${DKR_ARCH}
+      if [ -f $file ]; then
+        bash -c "docker-compose -f $file --host ${DOCKER_HOST:-''} build"
+      else
+        bash -c "docker build -f Dockerfile.${DKR_ARCH} . && docker ps"
+      fi
       break;;
     2|--balena)
       echo "Deny cross-build"
       for d in ${projects[@]}; do
-        comment $d/Dockerfile.template
+        comment $scriptd/$d/Dockerfile.template
       done
       [ $(which balena) > /dev/null ] && declare -a apps=($(sudo balena apps | awk '{if (NR>1) print $2}'))
-      i="1..${#apps}"; echo "$i: ${apps[@]}"
+      i=0
+      for app in ${apps[@]}; do
+        i=$(($i + 1))
+        printf "[%s]: %s " "${i}" "${app}"
+      done
       read -p "Where do you want to push [1-${#apps}] ? " appName
-      git commit -a -m "${DKR_ARCH} pushed to balena.io"
+      printf "%s was selected\n" "${apps[$appName-1]}"
+      cp -f $scriptd/docker-compose.yml $scriptd/docker-compose.yml.old
+      cp -f $scriptd/docker-compose.${DKR_ARCH} $scriptd/docker-compose.yml
       if [ $(sudo which balena) > /dev/null ]; then
-        sudo balena push ${apps[$appName-1]}
+        sudo balena push ${apps[$appName-1]} || true
       else
-        git push -uf balena ${apps[$appName-1]}
+        git push -uf balena ${apps[$appName-1]} || true
       fi
+      cp -f $scriptd/docker-compose.yml.old $scriptd/docker-compose.yml
       break;;
     3|--nobuild)
       break;;

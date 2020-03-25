@@ -17,7 +17,7 @@ add)
     mplayer -volume $CONNECTION_NOTIFY_VOLUME /usr/src/sounds/connect.mp3 -really-quiet > /dev/null 2>&1
     amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
     if [[ -z "$BLUETOOTH_SCRIPTS" ]]; then
-      python /usr/src/bluetooth-scripts/bluetooth-connect
+      python3 /usr/src/bluetooth-scripts/bluetooth-connect
     fi
     ;;
 remove)
@@ -25,7 +25,7 @@ remove)
     printf "discoverable on\npairable on\nexit\n" | bluetoothctl
     amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
 	if [[ -z "$BLUETOOTH_SCRIPTS" ]]; then
-      python /usr/src/bluetooth-scripts/bluetooth-disconnect
+      python3 /usr/src/bluetooth-scripts/bluetooth-disconnect
     fi
     ;;
 esac
