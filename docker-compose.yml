@@ -6,7 +6,7 @@ services:
     env_file: common.env
     build:
       context: ./bluetooth-audio
-      dockerfile: Dockerfile.template
+      dockerfile: Dockerfile.armhf
       args:
         BTSPEAKER_SINK: 00:00:00:00:00:00
     image: betothreeprod/bluetooth-audio
@@ -16,19 +16,55 @@ services:
     volumes:
       - bluetoothcache:/var/cache/bluetooth
   airplay:
-    build: ./airplay
+    build:
+      context: ./airplay
+      dockerfile: Dockerfile.armhf
+    image: betothreeprod/airplay
+    env_file: common.env
     restart: always
     network_mode: host
     privileged: true
     labels:
       io.balena.features.dbus: 1
   spotify:
-    build: ./spotify
+    build:
+      context: ./spotify
+      dockerfile: Dockerfile.armhf
+    image: betothreeprod/spotify
+    env_file: common.env
     restart: always
     network_mode: host
     privileged: true
     volumes:
       - spotifycache:/var/cache/raspotify
+  wifi-connect:
+    network_mode: host
+    build:
+      context: ./python-wifi-connect
+      dockerfile: Dockerfile.armhf
+    image: betothreeprod/python-wifi-connect
+    env_file: common.env
+    labels:
+      io.balena.features.dbus: 1
+      io.balena.features.supervisor-api: 1
+    privileged: true
+    ports:
+      - "80:80"
+  bluetooth-connect:
+    network_mode: host
+    build:
+      context: ./python-bt-connect
+      dockerfile: Dockerfile.armhf
+    image: betothreeprod/python-bt-connect
+    env_file: common.env
+    labels:
+      io.balena.features.dbus: 1
+      io.balena.features.supervisor-api: 1
+    privileged: true
+    ports:
+      - "8000:8000"
+    depends_on:
+      - bluetooth-audio
 volumes:
   spotifycache:
   bluetoothcache:

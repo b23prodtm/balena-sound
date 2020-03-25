@@ -1,39 +1,32 @@
-#!/usr/bin/env python
-import bluetooth, sys, os, re, subprocess, time
-def parse_argv (myenv, argv, i, options, usage):
-    """Parse script arguments recursively
-    i -- index in both argv and myenv
-    options -- Literals set of options, e.g. afh where -a, -f, -h are valid options as for -afh
-    """
-    if i >= len(argv):
-        return
-    pf = "-+[" + options + "]*"
-    time = re.compile(pf + "d(uration)?.*")
-    serv = re.compile(pf + "[su](uid)?.*")
-    pport = re.compile(pf + "[p](rotocol)?.*")
-    help = re.compile(pf + "h(elp)?.*")
-    any = re.compile(pf)
-    if i < len(argv):
-        if time.match(argv[i]):
-            myenv['BTSPEAKER_SCAN_DURATION'] = argv[i+1]
-            del argv[i]
-        elif serv.match(argv[i]):
-            myenv['service'] = argv[i+1]
-            del argv[i]
-        elif pport.match(argv[i]):
-            myenv['proto-port'] = argv[i+1]
-            del argv[i]
-        elif help.match(argv[i]):
+#!/usr/bin/env python3
+import bluetooth, sys, os, re, subprocess, time, getopt
+def parse_argv (myenv, argv):
+    usage = 'Command line args: \n'\
+'  -d,--duration <seconds>      Default: {}\n'\
+'  -s,--uuid <service-name>     Default: {}\n'\
+'  --protocol <proto:port>      Default: {}\n'\
+'  [bt-address]                 Default: {}\n'\
+'  -h,--help Show help.\n'.format(myenv["BTSPEAKER_SCAN_DURATION"],myenv["service"],myenv["proto-port"],myenv["BTSPEAKER_SINK"])
+    try:
+        opts, args = getopt.getopt(argv[1:], "u:d:s:h",["help", "duration=", "uuid=", "protocol="])
+    except getopt.GetoptError:
+        print(usage)
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
             print(usage)
-            sys.exit(0)
-        elif any.match(argv[i]):
-            del argv[i]
-        elif re.compile("([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}").match(argv[i]):
-            myenv["BTSPEAKER_SINK"] = argv[i]
+            sys.exit()
+        if opt in ("-d", "--duration"):
+            myenv['BTSPEAKER_SCAN_DURATION'] = arg
+        elif opt in ("-s", "--uuid"):
+            myenv['service'] = arg
+        elif opt in ("--protocol"):
+            myenv['proto-port'] = arg
+        elif re.compile("([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}").match(arg):
+            myenv["BTSPEAKER_SINK"] = arg
         else:
             print("Wrong argument %s !" % argv[i])
             print(usage)
-    parse_argv(myenv, argv, i+1, options, usage)
 
 def bt_service(addr, proto_port="", *serv):
     for services in bluetooth.find_service(address=addr):
@@ -90,8 +83,7 @@ def main(argv):
         }
     myenv.update(main.defaults)
     myenv.update(os.environ)
-    parse_argv(myenv, argv, 1, 'sdhp', "Usage: {} [-h,--help] [-d,--duration <seconds>] [-s,--uuid <service-name>] [-p, --protocol <proto:port>] [bt-address]\n\
-    defaults: {}".format(argv[0], main.defaults))
+    parse_argv(myenv, argv)
     print("looking for nearby devices...")
     try:
         nearby_devices = bluetooth.discover_devices(lookup_names = True, flush_cache = True, duration = int(myenv["BTSPEAKER_SCAN_DURATION"]))

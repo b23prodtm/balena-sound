@@ -14,7 +14,7 @@ This project has been tested on Raspberry Pi 3B/3B+ and Raspberry Pi Zero W. If 
 
 To use the Raspberry Pi, you can choose:
 <!-- toc -->
-- [Connect to the Blue-Speakers](#Connect-to-the-Blue-Speakers)
+- [Connect to the Blue-Speakers](#Connect)
   + 3.5mm audio cable to the input on your speakers/Hi-Fi
 - [As a transmitter to bluetooth speakers](#As-a-transmitter-to-bluetooth-speakers):
   + A sound card connected to the USB port for the loopback
@@ -46,7 +46,8 @@ To run this project is as simple as deploying it to a balenaCloud application; n
 ### Deploy this application
 
 * Install the [balena CLI tools](https://github.com/balena-io/balena-cli/blob/master/INSTALL.md)
-* Login with `balena login`
+* Login with `sudo balena login`
+* Run `./deploy.sh`
 * Download this project and from the project directory run `balena push <appName>` where `<appName>` is the name you gave your balenaCloud application in the first step.
 
 ### Customize device name
@@ -90,3 +91,13 @@ To enable Spotify login you can add your username/e-mail and password, which are
 * Let the music play!
 
 This project is in active development so if you have any feature requests or issues please submit them here on GitHub. PRs are welcome, too.
+
+## As a transmitter to bluetooth speakers
+The modern way of audio streaming to your new wireless speakers, now available to you. You don't have any bluetooth capability on your old set top box?
+You can definitely use your Raspberry Pi to add a wireless connection to old TV set top boxes, using an USB card (snd_usb_audio). You have to connect from an audio source to the sound card input (either digital, optical or analog jacks). Then Blue-Speakers can pair to your existing bluetooth speakers device. To configure the wireless speakers, adjust the Device Service Variable to your needs.
+
+    BTSPEAKER_SINK XX:XX:XX:XX:XX:XX
+
+Any bluetooth enabled OS may help you to find hexadecimal physical address. Fill it with the physical Bluetooth address of the speakers and balenaOS will restart immediatelly. You may hear the sound if the device is up and paired with the Raspberry Pi.
+
+![Setting the device speaker address](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/device-name-config.png)

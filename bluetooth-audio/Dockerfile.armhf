@@ -1,4 +1,4 @@
-FROM balenalib/generic-aarch64:stretch-build
+FROM balenalib/raspberrypi3-ubuntu-python:3.6-bionic-build
 ENV DBUS_SYSTEM_BUS_ADDRESS unix:path=/host/run/dbus/system_bus_socket
 
 # Deprecated INITSYSTEM as of balenalib major changes
@@ -12,19 +12,35 @@ ENV SYSTEM_OUTPUT_VOLUME 75
 # local build tests data
 ARG BTSPEAKER_SINK
 ENV BTSPEAKER_SINK ${BTSPEAKER_SINK:-00:00:00:00:00:00}
-ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-250000}
+ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-500000}
 # RUN [ "cross-build-start" ]
 RUN install_packages \
-  alsa-utils \
-  bluealsa \
   bluez \
-  python-gobject \
-  python-dbus \
-  python-gpiozero \
-  python-bluez \
+  python3-gi \
+  python3-gpiozero \
+  python3-dbus \
   libbluetooth-dev \
-  mplayer
-# RUN [ "cross-build-end" ]
+  bluetooth \
+  alsa-utils \
+  mplayer \
+  libasound2-dev \
+  libbluetooth-dev \
+  libdbus-1-dev \
+  libglib2.0-dev \
+  libsbc-dev \
+  dh-autoreconf \
+  libmp3lame-dev \
+  libfdk-aac-dev
+
+WORKDIR /usr/src/
+
+# Bluealsa
+COPY bluealsa bluealsa
+WORKDIR /usr/src/bluealsa
+RUN autoreconf --install && mkdir build && cd build \
+  && ../configure --enable-mp3lame --enable-aac --enable-ofono --enable-debug
+RUN cd build && make && make install
+
 WORKDIR /usr/src/
 
 # Copy sounds
@@ -47,10 +63,19 @@ COPY .asoundrc .
 COPY bluetooth-agent .
 RUN chmod +x bluetooth-agent
 
+COPY config config
+COPY scripts scripts
+RUN chmod -R +x scripts
+
 COPY start.sh .
 RUN chmod +x ./start.sh
 
 # ALSA’s Dynamic Audio Power Management (DAPM) shutting down the sound module of your device to save power
 RUN touch /etc/modprobe.d/snd_soc_core.conf && echo "options snd_soc_core pmdown_time -1" | tee -a /etc/modprobe.d/snd_soc_core.conf
 
-CMD [ "/bin/bash", "/usr/src/start.sh" ]
+# Install Python VENV
+RUN [ "./scripts/install.sh" ]
+# RUN [ "cross-build-end" ]
+
+ENTRYPOINT [ "./scripts/run.sh" ]
+CMD [ "./start.sh" ]
