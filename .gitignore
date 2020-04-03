@@ -1,1 +1,7 @@
 .DS_Store
+*.old
+**/Dockerfile.*
+!**/Dockerfile.template
+!**/Dockerfile.armhf
+**/docker-compose.*
+!**/docker-compose.yml

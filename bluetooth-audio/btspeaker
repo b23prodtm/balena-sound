@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+PCM_BUFFER_TIME=${PCM_BUFFER_TIME:-300000}
+MAC_ADDRESS=${BTSPEAKER_SINK:-$TRUSTED_MAC_ADDRESS}
+export BT_IDLE=0x10 \
+BT_SCAN=0x2 \
+BT_CONNECT=0x4 \
+BT_PLAY=0x8 \
+BT_ERRO=0x1 \
+BT_STATUS=0x2
+
+while [ "$#" -gt 0 ]; do case $1 in
+  -[tT]*)
+    shift; PCM_BUFFER_TIME=$1;;
+  -[hH]*)
+    echo -e "Usage: $0 [-t <PCM_BUFFER_TIME>] [device HCI]" && exit 0;;
+  *)
+    MAC_ADDRESS=$1;;
+esac; shift; done
+# loop until valid connection was found
+# scan and pair on sink "bluetooth speaker" device
+function btspeaker() {
+  if [ $(($BT_STATUS & $BT_ERRO)) -ne 0 ]; then
+    if [ $(($BT_STATUS & $BT_CONNECT)) -ne 0 ]; then
+      export TRUSTED_MAC_ADDRESS=""
+      if [ "${TRUSTED_MAC_ADDRESS}" != "$1" ]; then
+        printf "untrust %s\nremove %s\nexit\n" "$1" "$1" | bluetoothctl
+      fi
+    fi
+    export BT_STATUS=$(($BT_STATUS >> 1))
+  fi
+  sleep 1
+  if [ $(($BT_STATUS & $BT_SCAN)) -ne 0 ]; then
+    printf "Bluetooth speakers %s...\n" "$1"
+    if [ "${TRUSTED_MAC_ADDRESS}" != "$1" ]; then
+      ./btspeaker.py -d 10 $1
+    else
+      printf "$1 ready to connect."
+    fi
+  elif [ $(($BT_STATUS & $BT_CONNECT)) -ne 0 ]; then
+    printf "Bluetooth connect...\n"
+    printf "devices\ntrust %s\nconnect %s\nexit\n" "$1" "$1" | bluetoothctl
+  elif [ $(($BT_STATUS & $BT_PLAY)) -ne 0 ]; then
+    sed -E "s/(^.*device )([^ ]*)(.*)/\\1\"$1\"\\3/" /usr/src/.asoundrc | tee ~/.asoundrc
+    aplay -D bluealsa sounds/connect.wav
+  elif [ $(($BT_STATUS & $BT_IDLE)) -ne 0 ]; then
+    return 0
+  else
+    export BT_STATUS=0x1
+  fi
+  if [ $? -eq 0 ]; then
+    export BT_STATUS=$(($BT_STATUS << 1))
+  else
+    echo "Failed $?"
+    export BT_STATUS=$(($BT_STATUS & $BT_ERRO))
+  fi
+  btspeaker $*
+}
+btspeaker $MAC_ADDRESS
+# loopback snd_usb_audio to blue-speaker
+arecord -l
+# necessary variable check default behaviour
+BLUE_SPEAKERS=${BLUE_SPEAKERS:-"hw:1"}
+printf "Alsa sound loop from BLUE_SPEAKERS=%s.\n" "${BLUE_SPEAKERS},0"
+function keepalive() {
+  myprocess=$1
+  shift
+  mycmd=$*
+  mylog="/tmp/balena/$myprocess.log"
+  case "$(pidof $myprocess | wc -w)" in
+    0)  printf " + Keep alive pid %s %s:\n redirect all output: %s\n" "$myprocess" "$mycmd" "$mylog"
+        $myprocess $mycmd > $mylog 2>&1 &
+        sleep 1
+        if [ $(pidof $myprocess | wc -w) -eq 0 ]; then
+          exit 1
+        fi;;
+    1)  # all ok but check mylog for errors
+        if [[ $(wc -l $mylog | awk '{print $1}') -ne 0 ]]; then
+          printf " - Unhandled errors were caught up.\n%s\n" "$(tail -n1 $mylog)"
+          kill -9 $(pidof $myprocess | awk '{print $1}') &
+          exit 1
+        fi;;
+    *)  printf " x Removed double pid %s %s\n" "$myprocess" "$mycmd"
+        kill -9 $(pidof $myprocess | awk '{print $1}') &
+      ;;
+  esac;
+  sleep 1
+  keepalive $myprocess $mycmd
+}
+
+keepalive alsaloop -P bluealsa -t $PCM_BUFFER_TIME -C $BLUE_SPEAKERS,0 --sync=5 -A5 -b

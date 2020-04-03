@@ -1,11 +1,11 @@
-FROM balenalib/generic-aarch64-python:3.6-build
+FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-python:3.6-stretch-build
 ENV DBUS_SYSTEM_BUS_ADDRESS unix:path=/host/run/dbus/system_bus_socket
 
 ENV INITSYSTEM ON
 # RUN [ "cross-build-start" ]
 
 # --- Service org.bluealsa install - start
-ENV UDEV on
+ENV UDEV 1
 
 # Install Systemd
 RUN install_packages \
@@ -32,9 +32,14 @@ RUN systemctl mask \
 
 RUN install_packages \
     bluetooth \
-    python-gpiozero \
     python-dbus \
-    python-bluez \
+\
+    libgirepository1.0-dev \
+    gcc \
+    libcairo2-dev \
+    pkg-config \
+    python-dev \
+    gir1.2-gtk-3.0 \
 \
     libbluetooth-dev \
     dh-autoreconf \
@@ -44,27 +49,22 @@ RUN install_packages \
     libdbus-1-dev \
     libglib2.0-dev \
     libsbc-dev \
-    libmp3lame-dev \
-\
-    libgirepository1.0-dev \
-    gcc \
-    libcairo2-dev \
-    pkg-config \
-    python-dev \
-    gir1.2-gtk-3.0
+    libmp3lame-dev
 
 # Bluealsa
 WORKDIR /usr/src/bluealsa
 COPY bluealsa/ .
 RUN autoreconf --install && mkdir build && cd build \
   && ../configure --enable-mp3lame --enable-ofono --enable-debug
-RUN cd build && make && make install
+RUN cd build && sudo make && sudo make install
 
-COPY initsystem/system/org-bluealsa /etc/init.d/org-bluealsa
-RUN chmod 0755 /etc/init.d/org-bluealsa
-COPY initsystem/system/org.bluealsa.service /lib/systemd/system/
+COPY initsystem/system/bluealsa.env /etc/default/
+COPY initsystem/system/bluealsa.service /lib/systemd/system/
+COPY initsystem/system/org.bluealsa.service /usr/share/dbus-1/system-services/
+#If you want the bluealsa daemon to run under a dedicated account (i.e. non-root), you should also modify dbus configuration.
+#COPY initsystem/system/bluealsa.conf /usr/share/dbus-1/system.d/
 
-RUN systemctl enable org.bluealsa
+RUN systemctl enable bluealsa.service
 
 WORKDIR /usr/src/
 

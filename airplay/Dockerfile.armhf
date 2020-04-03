@@ -1,0 +1,14 @@
+FROM balenalib/raspberrypi3:buster
+
+ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
+ARG SAMPLE_RATE
+ENV SAMPLE_RATE ${SAMPLE_RATE:-48000}
+
+# RUN [ "cross-build-start" ]
+RUN install_packages shairport-sync
+# RUN [ "cross-build-end" ]
+COPY start.sh /usr/src/
+COPY conf/. /etc/
+COPY .asoundrc /usr/src/
+
+CMD [ "/bin/bash", "/usr/src/start.sh" ]

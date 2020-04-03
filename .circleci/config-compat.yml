@@ -1,0 +1,130 @@
+version: 2
+jobs:
+  build:
+    docker:
+    - image: circleci/python:3
+    environment:
+    - BASH_ENV: /etc/profile
+    working_directory: /tmp/src/
+    steps:
+    - run:
+        command: |
+          sudo mkdir -p $CIRCLE_WORKING_DIRECTORY && cd /tmp/_circleci_local_build_repo && git ls-files \
+          | sudo tar -T - -c | sudo tar -x -C $CIRCLE_WORKING_DIRECTORY \
+          && sudo cp -a /tmp/_circleci_local_build_repo/.git $CIRCLE_WORKING_DIRECTORY
+    - run:
+        command: sudo git submodule sync
+    - run:
+        command: sudo git submodule update --init --recursive
+    - persist_to_workspace:
+        root: .
+        paths:
+        - bluetooth-audio
+        - airplay
+        - spotify
+    - run:
+        name: Setup Environment Variables
+        command: |
+          echo $(cat amd64.env | awk  '{printf "export %s\n", $1}') | sudo tee -a $BASH_ENV
+          echo $(cat common.env | awk  '{printf "export %s\n", $1}') | sudo tee -a $BASH_ENV
+    - setup_remote_docker:
+        docker_layer_caching: false
+    - run:
+        name: Deploy
+        command: |
+          set -x
+          eval $(cat $BASH_ENV)
+          sudo ./deploy.sh "$DKR_ARCH" --local
+workflows:
+  build-and-compose:
+    jobs:
+    - build:
+        context: Info-b23prodtm
+  version: 2
+
+# Original config.yml file:
+# # PHP CircleCI 2.0 configuration file
+# #
+# # Check https://circleci.com/docs/2.0/language-php/ for more details
+# #
+# version: 2.1
+# jobs:
+#   build:
+#     docker:
+#       # using custom image, see .circleci/images/primary/Dockerfile
+#       - image: circleci/python:3
+#     #An image that\u2019s based on Alpine Linux (like docker), uses the ash shell.
+#     #shell: /bin/sh -leo pipefail
+#     environment:
+#       BASH_ENV: /etc/profile
+#     working_directory: /tmp/src/
+#     parameters:
+#       custom_checkout:
+#         description: use custom local checkout fix in CLI
+#         type: string
+#         default: \"\"
+#     steps:
+#       - when:
+#           condition: << parameters.custom_checkout >>
+#           steps:
+#             - run:
+#                 command: |
+#                   sudo mkdir -p $CIRCLE_WORKING_DIRECTORY && cd << parameters.custom_checkout >> && git ls-files \\
+#                   | sudo tar -T - -c | sudo tar -x -C $CIRCLE_WORKING_DIRECTORY \\
+#                   && sudo cp -a << parameters.custom_checkout >>/.git $CIRCLE_WORKING_DIRECTORY
+#       - unless:
+#           condition: <<parameters.custom_checkout>>
+#           steps:
+#             - checkout
+#       - run: sudo git submodule sync
+#       - run: sudo git submodule update --init --recursive
+#       # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
+#       - persist_to_workspace:
+#           root: .
+#         # Must be relative path from root
+#           paths:
+#             - bluetooth-audio
+#             - airplay
+#             - spotify
+#       - run:
+#           name: Setup Environment Variables
+#           command: |
+#             echo $(cat amd64.env | awk  '{printf \"export %s\\n\", $1}') | sudo tee -a $BASH_ENV
+#             echo $(cat common.env | awk  '{printf \"export %s\\n\", $1}') | sudo tee -a $BASH_ENV
+#       # Download and cache dependencies
+#       # - restore_cache:
+#       #     keys:
+#       #       # \"composer.lock\" can be used if it is committed to the repo
+#       #       - v1-dependencies-{{ checksum \"composer.lock\" }}
+#       #       # fallback to using the latest cache if no exact match is found
+#       #       - v1-dependencies-
+#       - setup_remote_docker:   # (2)
+#           docker_layer_caching: false # (3)
+#       - run:
+#           name: Deploy
+#           command: |
+#             set -x
+#             eval $(cat $BASH_ENV)
+#             sudo ./deploy.sh \"$DKR_ARCH\" --local
+#       # - run:
+#       #     command: |
+#       #       set -x
+#       #       ./test.sh
+#       #     when: always
+#       # - save_cache:
+#       #     key: v1-dependencies-{{ checksum \"composer.lock\" }}
+#       #     paths:
+#       #       - ./bluetooth-audio
+#       # build and push Docker image
+#       # - run: |
+#       #     set -u
+#       #     TAG=0.1.$CIRCLE_BUILD_NUM
+#       #     docker-compose -f docker-compose.${DKR_ARCH} build
+#       # docker login -u $DOCKER_USER -p $DOCKER_PASS
+#       # docker push $DOCKER_USER/balena-sound:$TAG
+# workflows:
+#   build-and-compose:
+#     jobs:
+#       - build:
+#           custom_checkout: \"/tmp/_circleci_local_build_repo\"
+#           context: Info-b23prodtm
