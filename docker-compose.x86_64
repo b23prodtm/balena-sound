@@ -50,8 +50,6 @@ services:
       io.balena.features.dbus: 1
       io.balena.features.supervisor-api: 1
     privileged: true
-    ports:
-      - "80:80"
   bluetooth-connect:
     network_mode: host
     build:
@@ -66,7 +64,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - wifi-connect
+      - bluetooth-audio
 volumes:
   spotifycache:
   bluetoothcache:
