@@ -5,7 +5,7 @@ ENV INITSYSTEM ON
 # RUN [ "cross-build-start" ]
 
 # --- Service org.bluealsa install - start
-ENV UDEV 1
+ENV UDEV=on
 
 # Install Systemd
 RUN install_packages \
@@ -73,12 +73,8 @@ WORKDIR /usr/src/
 COPY bluetooth-agent .
 RUN chmod 0755 bluetooth-agent
 
-# Install Python VENV
-COPY initsystem/config config
 COPY initsystem/scripts scripts
 RUN chmod -R 0755 scripts
-
-RUN [ "./scripts/install.sh" ]
 
 ENTRYPOINT [ "./scripts/run.sh" ]
 
