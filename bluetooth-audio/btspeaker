@@ -21,7 +21,6 @@ esac; shift; done
 function btspeaker() {
   if [ $(($BT_STATUS & $BT_ERRO)) -ne 0 ]; then
     if [ $(($BT_STATUS & $BT_CONNECT)) -ne 0 ]; then
-      export TRUSTED_MAC_ADDRESS=""
       if [ "${TRUSTED_MAC_ADDRESS}" != "$1" ]; then
         printf "untrust %s\nremove %s\nexit\n" "$1" "$1" | bluetoothctl
       fi

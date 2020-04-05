@@ -14,11 +14,11 @@ ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-500000}
 RUN install_packages \
   alsa-utils \
   bluez \
-# ### ARM BEGIN
-#   bluealsa \
-#   mplayer \
-#   python-gpiozero \
-# ### ARM END
+### ARM BEGIN
+  bluealsa \
+  mplayer \
+  python-gpiozero \
+### ARM END
   python-dbus \
   python-gobject \
   python-bluez \
