@@ -64,7 +64,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - bluetooth-audio
+      - wifi-connect
 volumes:
   spotifycache:
   bluetoothcache:
