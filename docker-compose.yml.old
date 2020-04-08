@@ -65,6 +65,9 @@ services:
       - "80:80"
     depends_on:
       - wifi-connect
+    volumes:
+      - bluetoothcache:/var/cache/bluetooth
+
 volumes:
   spotifycache:
   bluetoothcache:
