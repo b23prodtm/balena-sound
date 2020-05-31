@@ -66,12 +66,11 @@ sleep 2
 if [ -f "/var/cache/bluetooth/reconnect_device" ]; then
   export TRUSTED_MAC_ADDRESS=$(cat /var/cache/bluetooth/reconnect_device)
   printf "Attempting to reconnect to previous bluetooth device: %s\n" "$TRUSTED_MAC_ADDRESS"
-  printf "connect %s\nexit\n" "$TRUSTED_MAC_ADDRESS" | bluetoothctl > /dev/null
+  printf "trust %s\nconnect %s\nexit\n" "$TRUSTED_MAC_ADDRESS" | bluetoothctl > /dev/null
 fi
-
 # Fork pid (&) btspeaker and force device (bluealsa) to shutdown if speaker connection was lost (kill bluealsa-aplay)
-printf "Enable btspeaker service %s...\n" "$BTSPEAKER_SINK"
-./btspeaker -t $PCM_BUFFER_TIME $BTSPEAKER_SINK || kill -9 $(pidof bluealsa-aplay | awk '{print $1}') &
+printf "Enable btspeaker service %s...\n" "${BTSPEAKER_SINK:-$TRUSTED_MAC_ADDRESS}"
+./btspeaker -t $PCM_BUFFER_TIME ${BTSPEAKER_SINK:-$TRUSTED_MAC_ADDRESS} || kill -9 $(pidof bluealsa-aplay | awk '{print $1}') &
 
 aplay -l
 printf "Bluealsa plays %s to BLUE_SPEAKERS=%s..." "$play" "$BLUE_SPEAKERS"

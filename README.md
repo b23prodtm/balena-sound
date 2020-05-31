@@ -96,8 +96,10 @@ This project is in active development so if you have any feature requests or iss
 The modern way of audio streaming to your new wireless speakers, now available to you. You don't have any bluetooth capability on your old set top box?
 You can definitely use your Raspberry Pi to add a wireless connection to old TV set top boxes, using an USB card (snd_usb_audio). You have to connect from an audio source to the sound card input (either digital, optical or analog jacks). Then Blue-Speakers can pair to your existing bluetooth speakers device. To configure the wireless speakers, adjust the Device Service Variable to your needs.
 
-    BTSPEAKER_SINK XX:XX:XX:XX:XX:XX
+    BT_SCAN_TIMEOUT 2
 
-Any bluetooth enabled OS may help you to find hexadecimal physical address. Fill it with the physical Bluetooth address of the speakers and balenaOS will restart immediatelly. You may hear the sound if the device is up and paired with the Raspberry Pi.
+Change this setting to eventually find more devices in your vincinity. Increase to e.g. 4-6 seconds.
+
+Now, just enable [public device urls](https://www.balena.io/docs/learn/develop/runtime/#public-device-urls) from the dashboard and you can pick some audio speakers from the blue-speakers URL.
 
 ![Setting the device speaker address](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/device-name-config.png)

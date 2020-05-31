@@ -5,3 +5,5 @@
 !**/Dockerfile.armhf
 **/docker-compose.*
 !**/docker-compose.yml
+.env
+*.old
