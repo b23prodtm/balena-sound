@@ -1,18 +1,35 @@
 #!/usr/bin/env bash
-
 if [[ -z "$BLUETOOTH_DEVICE_NAME" ]]; then
   BLUETOOTH_DEVICE_NAME=$(printf "balenaSound %s" $(hostname | cut -c -4))
 fi
 
 # Set the system volume here
-SYSTEM_OUTPUT_VOLUME="${SYSTEM_OUTPUT_VOLUME:-75}"
+SYSTEM_OUTPUT_VOLUME="${SYSTEM_OUTPUT_VOLUME:-100}"
 echo $SYSTEM_OUTPUT_VOLUME > /usr/src/system_output_volume
 printf "Setting output volume to %s%%\n" "$SYSTEM_OUTPUT_VOLUME"
-amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+
+#ALSA config mixervon usb second card as default if available
+if [[ -f /proc/asound/cards ]]; then
+  let card=$(cat /proc/asound/cards | grep ]: | wc -l)-1
+  case "$card" in
+    0)
+      mixer_control_name="PCM";
+      export BLUE_SPEAKERS="${BLUE_SPEAKERS:-hw:0}"
+      ;;
+    *)
+      echo -e "\
+defaults.pcm.card $card\n\
+defaults.ctl.card $card" | tee /etc/asound.conf
+      mixer_control_name="Master";
+      export BLUE_SPEAKERS="${BLUE_SPEAKERS:-hw:$card}"
+      ;;
+  esac
+fi
+amixer sset "'${mixer_control_name}'",0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
 amixer sset Digital,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
 
 # Set the volume of the connection notification sounds here
-CONNECTION_NOTIFY_VOLUME="${CONNECTION_NOTIFY_VOLUME:-75}"
+CONNECTION_NOTIFY_VOLUME="${CONNECTION_NOTIFY_VOLUME:-100}"
 echo $CONNECTION_NOTIFY_VOLUME > /usr/src/connection_notify_volume
 printf "Connection notify volume is %s%%\n" "$CONNECTION_NOTIFY_VOLUME"
 
@@ -37,10 +54,9 @@ if [[ -n $DISABLE_MULTI_ROOM ]] || [[ $BALENA_DEVICE_TYPE == "raspberry-pi" ]]; 
 fi
 
 sleep 2
-rm -rf /var/run/bluealsa/
-/usr/bin/bluealsa -i hci0 -p a2dp-sink &
+/usr/bin/bluealsa -i hci0 -p a2dp-source -p a2dp-sink &
 
-hciconfig hci1 down > /dev/null 2>&1 # Disable onboard bluetooth if using a bluetooth dongle (onboard interface gets remapped to hci1) 
+hciconfig hci1 down > /dev/null 2>&1 # Disable onboard bluetooth if using a bluetooth dongle (onboard interface gets remapped to hci1)
 hciconfig hci0 up
 hciconfig hci0 name "$BLUETOOTH_DEVICE_NAME"
 
@@ -55,11 +71,15 @@ fi
 # Reconnect if there is a known device
 sleep 2
 if [ -f "/var/cache/bluetooth/reconnect_device" ]; then
-  TRUSTED_MAC_ADDRESS=$(cat /var/cache/bluetooth/reconnect_device)
+  export TRUSTED_MAC_ADDRESS=$(cat /var/cache/bluetooth/reconnect_device)
   printf "Attempting to reconnect to previous bluetooth device: %s\n" "$TRUSTED_MAC_ADDRESS"
-  printf "connect %s\nexit\n" "$TRUSTED_MAC_ADDRESS" | bluetoothctl > /dev/null
+  printf "trust %s\nconnect %s\nexit\n" "$TRUSTED_MAC_ADDRESS" | bluetoothctl > /dev/null
 fi
+# Fork pid (&) btspeaker and force device (bluealsa) to shutdown if speaker connection was lost (kill bluealsa-aplay)
+printf "Enable btspeaker service %s...\n" "${BTSPEAKER_SINK:-$TRUSTED_MAC_ADDRESS}"
+./btspeaker -t $PCM_BUFFER_TIME ${BTSPEAKER_SINK:-$TRUSTED_MAC_ADDRESS} || kill -9 $(pidof bluealsa-aplay | awk '{print $1}') &
 
-sleep 2
+aplay -l
+printf "Bluealsa plays %s to BLUE_SPEAKERS=%s..." "$play" "$BLUE_SPEAKERS"
 printf "Device is discoverable as \"%s\"\n" "$BLUETOOTH_DEVICE_NAME"
-exec /usr/bin/bluealsa-aplay --pcm-buffer-time=1000000 00:00:00:00:00:00
+exec /usr/bin/bluealsa-aplay --pcm-buffer-time=$PCM_BUFFER_TIME -d $BLUE_SPEAKERS,0 00:00:00:00:00:00

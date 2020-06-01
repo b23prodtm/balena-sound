@@ -1,31 +1,37 @@
-FROM balenalib/intel-nuc:stretch-build
-ENV DBUS_SYSTEM_BUS_ADDRESS unix:path=/host/run/dbus/system_bus_socket
+FROM balenalib/intel-nuc-debian-python:stretch-build
+ENV DBUS_SYSTEM_BUS_ADDRESS="unix:path=/host/run/dbus/system_bus_socket"
 
-# Deprecated INITSYSTEM as of balenalib major changes
-# https://www.balena.io/docs/reference/base-images/base-images/#major-changes
-ENV INITSYSTEM OFF
-ENV UDEV on
+ENV UDEV=on
 
+# RUN [ "cross-build-start" ]
+
+ARG BT_BLE
+ENV BT_BLE ${BT_BLE:-0}
+ARG BT_SCAN_TIMEOUT
+ENV BT_SCAN_TIMEOUT ${BT_SCAN_TIMEOUT:-2}
 ENV BLUETOOTH_PIN_CODE 0000
 ENV CONNECTION_NOTIFY_VOLUME 100
 ENV SYSTEM_OUTPUT_VOLUME 75
 # local build tests data
-ARG BTSPEAKER_SINK
-ENV BTSPEAKER_SINK ${BTSPEAKER_SINK:-00:00:00:00:00:00}
-ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-250000}
-# RUN [ "cross-build-start" ]
+ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-500000}
 RUN install_packages \
   alsa-utils \
-  bluealsa \
   bluez \
-  python-gobject \
+# ### ARM BEGIN
+#   bluealsa \
+#   mplayer \
+#   python-gpiozero \
+# ### ARM END
   python-dbus \
-  python-gpiozero \
+  python-gobject \
   python-bluez \
-  libbluetooth-dev \
-  mplayer
-# RUN [ "cross-build-end" ]
+  libbluetooth-dev
+
 WORKDIR /usr/src/
+
+# Bluetooth-agent handles the auth of devices
+COPY bluetooth-agent .
+RUN chmod 0755 bluetooth-agent
 
 # Copy sounds
 COPY sounds sounds
@@ -33,24 +39,22 @@ COPY sounds sounds
 # Setup udev rules - this lets us play the connect/disconnect sound,
 # turn off discover/pairing when a client is connected
 # and also run a python script
-COPY bluetooth-udev /usr/src/
-RUN chmod +x /usr/src/bluetooth-udev
+COPY bluetooth-udev .
+RUN chmod +x bluetooth-udev
 COPY udev-rules/ /etc/udev/rules.d/
-COPY bluetooth-scripts/ /usr/src/bluetooth-scripts/
+COPY bluetooth-scripts bluetooth-scripts
 
-# add bluealsa service
+# add bluealsa speaker files
 COPY btspeaker* ./
-RUN chmod +x ./btspeaker*
+RUN chmod +x btspeaker*
 COPY .asoundrc .
 
-# Bluetooth-agent handles the auth of devices
-COPY bluetooth-agent .
-RUN chmod +x bluetooth-agent
-
 COPY start.sh .
-RUN chmod +x ./start.sh
+RUN chmod 0755 start.sh
 
 # ALSA’s Dynamic Audio Power Management (DAPM) shutting down the sound module of your device to save power
 RUN touch /etc/modprobe.d/snd_soc_core.conf && echo "options snd_soc_core pmdown_time -1" | tee -a /etc/modprobe.d/snd_soc_core.conf
 
-CMD [ "/bin/bash", "/usr/src/start.sh" ]
+# RUN [ "cross-build-end" ]
+
+CMD [ "./start.sh" ]

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+. patch
 # Set the device broadcast name for AirPlay
 if [[ -z "$BLUETOOTH_DEVICE_NAME" ]]; then
   BLUETOOTH_DEVICE_NAME=$(printf "balenaSound Airplay %s" $(hostname | cut -c -4))

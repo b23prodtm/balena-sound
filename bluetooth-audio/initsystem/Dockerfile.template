@@ -1,0 +1,134 @@
+FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-python:3.6-stretch-build
+ENV DBUS_SYSTEM_BUS_ADDRESS="unix:path=/host/run/dbus/system_bus_socket"
+
+ENV INITSYSTEM ON
+# RUN [ "cross-build-start" ]
+
+# --- Service org.bluealsa install - start
+ENV UDEV 1
+
+# Install Systemd
+RUN install_packages \
+        systemd \
+        systemd-sysv
+
+ENV container docker
+
+# We never want these to run in a container
+# Feel free to edit the list but this is the one we used
+RUN systemctl mask \
+    dev-hugepages.mount \
+    sys-fs-fuse-connections.mount \
+    sys-kernel-config.mount \
+\
+    display-manager.service \
+    getty@.service \
+    systemd-logind.service \
+    systemd-remount-fs.service \
+\
+    getty.target \
+    graphical.target \
+    kmod-static-nodes.service
+
+ARG BT_BLE
+ENV BT_BLE ${BT_BLE:-1}
+
+RUN install_packages \
+    bluetooth \
+    python-dbus \
+\
+    libgirepository1.0-dev \
+    gcc \
+    libcairo2-dev \
+    pkg-config \
+    python-dev \
+    gir1.2-gtk-3.0 \
+\
+    libbluetooth-dev \
+    dh-autoreconf \
+    bluez \
+    alsa-utils \
+    libasound2-dev \
+    libdbus-1-dev \
+    libglib2.0-dev \
+    libsbc-dev \
+    libmp3lame-dev
+
+# Bluealsa
+WORKDIR /usr/src/bluealsa
+COPY bluealsa/ .
+RUN autoreconf --install && mkdir build && cd build \
+  && ../configure --enable-mp3lame --enable-ofono --enable-debug
+RUN cd build && sudo make && sudo make install
+
+COPY initsystem/system/bluealsa.env /etc/default/
+COPY initsystem/system/bluealsa.service /lib/systemd/system/
+COPY initsystem/system/org.bluealsa.service /usr/share/dbus-1/system-services/
+#If you want the bluealsa daemon to run under a dedicated account (i.e. non-root), you should also modify dbus configuration.
+#COPY initsystem/system/bluealsa.conf /usr/share/dbus-1/system.d/
+
+RUN systemctl enable bluealsa.service
+
+WORKDIR /usr/src/
+
+# Bluetooth-agent handles the auth of devices
+COPY bluetooth-agent .
+RUN chmod 0755 bluetooth-agent
+
+# Install Python VENV
+COPY initsystem/config config
+COPY initsystem/scripts scripts
+RUN chmod -R 0755 scripts
+
+# Bluetooth Low Energy through GATTLIB and gattlib (Experimental)
+RUN if [ "$BT_BLE" = 1 ]; then \
+  install_packages \
+    pkg-config \
+    libboost-python-dev \
+    libboost-thread-dev \
+    libboost-all-dev \
+    libglib2.0-dev \
+    python3-dev \
+  && printf "pygattlib" | tee -a config/requirements.txt; fi
+COPY initsystem/ble_client.py .
+RUN [ "./scripts/install.sh" ]
+
+ENTRYPOINT [ "./scripts/run.sh" ]
+
+# --- Service org.bluealsa install - end
+
+ENV BLUETOOTH_PIN_CODE 0000
+ENV CONNECTION_NOTIFY_VOLUME 100
+ENV SYSTEM_OUTPUT_VOLUME 75
+# local build tests data
+ARG BTSPEAKER_SINK
+ENV BTSPEAKER_SINK ${BTSPEAKER_SINK:-00:00:00:00:00:00}
+ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-500000}
+RUN install_packages \
+  mplayer
+
+# Copy sounds
+COPY sounds sounds
+
+# Setup udev rules - this lets us play the connect/disconnect sound,
+# turn off discover/pairing when a client is connected
+# and also run a python script
+COPY bluetooth-udev .
+RUN chmod +x bluetooth-udev
+COPY udev-rules/ /etc/udev/rules.d/
+COPY bluetooth-scripts bluetooth-scripts
+
+# add bluealsa speaker files
+COPY btspeaker* ./
+RUN chmod +x btspeaker*
+COPY .asoundrc /root/
+
+COPY start.sh .
+RUN chmod 0755 start.sh
+
+# ALSA’s Dynamic Audio Power Management (DAPM) shutting down the sound module of your device to save power
+RUN touch /etc/modprobe.d/snd_soc_core.conf && echo "options snd_soc_core pmdown_time -1" | tee -a /etc/modprobe.d/snd_soc_core.conf
+
+# RUN [ "cross-build-end" ]
+
+CMD [ "./start.sh" ]

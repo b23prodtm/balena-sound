@@ -1,10 +1,13 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-debian:buster
+FROM balenalib/%%BALENA_MACHINE_NAME%%:buster
 
 ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
-RUN [ "cross-build-start" ]
-RUN install_packages shairport-sync
+ARG SAMPLE_RATE
+ENV SAMPLE_RATE ${SAMPLE_RATE:-48000}
 
+# RUN [ "cross-build-start" ]
+RUN install_packages shairport-sync
 COPY start.sh /usr/src/
-RUN [ "cross-build-end" ]
+COPY conf/ /etc/
+# RUN [ "cross-build-end" ]
 
 CMD [ "/bin/bash", "/usr/src/start.sh" ]

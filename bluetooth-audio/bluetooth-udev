@@ -15,8 +15,6 @@ add)
     printf "discoverable off\npairable off\nexit\n" | bluetoothctl
     echo $NAME | tr -d '"' > /var/cache/bluetooth/reconnect_device  # Save the mac address of the last connected device (for reconnect after reboot)
     mplayer -volume $CONNECTION_NOTIFY_VOLUME /usr/src/sounds/connect.mp3 -really-quiet > /dev/null 2>&1
-    amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
-    amixer sset Digital,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
     if [[ -z "$BLUETOOTH_SCRIPTS" ]]; then
       python /usr/src/bluetooth-scripts/bluetooth-connect
     fi
@@ -24,10 +22,14 @@ add)
 remove)
     mplayer -volume $CONNECTION_NOTIFY_VOLUME /usr/src/sounds/disconnect.mp3 -really-quiet > /dev/null 2>&1
     printf "discoverable on\npairable on\nexit\n" | bluetoothctl
-    amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
-    amixer sset Digital,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
 	if [[ -z "$BLUETOOTH_SCRIPTS" ]]; then
       python /usr/src/bluetooth-scripts/bluetooth-disconnect
     fi
     ;;
 esac
+if [[ -f /proc/asound/cards ]] && [[ $(cat /proc/asound/cards | grep "1 \[" 2> /dev/null) ]]; then
+  amixer sset 'Master',0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+else
+  amixer sset PCM,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &
+fi
+amixer sset Digital,0 $SYSTEM_OUTPUT_VOLUME% > /dev/null &

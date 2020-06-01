@@ -1,70 +1,104 @@
 version: '2'
 services:
   bluetooth-audio:
-    network_mode: host
-    restart: always
-    env_file: common.env
     build:
       context: ./bluetooth-audio
-      dockerfile: Dockerfile.armhf
-      args:
-        BTSPEAKER_SINK: 00:00:00:00:00:00
-    image: betothreeprod/bluetooth-audio
+      dockerfile: Dockerfile.template
+    restart: always
+    network_mode: host
+    privileged: true
+    labels:
+      io.balena.features.dbus: '1'
+    volumes:
+      - bluetoothcache:/var/cache/bluetooth
+      - snapcast:/var/cache/snapcast
+  airplay:
+    build:
+      context: ./airplay
+      dockerfile: Dockerfile.template
+    restart: always
+    network_mode: host
     privileged: true
     labels:
       io.balena.features.dbus: 1
     volumes:
-      - bluetoothcache:/var/cache/bluetooth
-  airplay:
-    build:
-      context: ./airplay
-      dockerfile: Dockerfile.armhf
-    image: betothreeprod/airplay
-    env_file: common.env
-    restart: always
-    network_mode: host
-    privileged: true
-    labels:
-      io.balena.features.dbus: 1
+      - snapcast:/var/cache/snapcast
   spotify:
     build:
       context: ./spotify
-      dockerfile: Dockerfile.armhf
-    image: betothreeprod/spotify
-    env_file: common.env
+      dockerfile: Dockerfile.template
     restart: always
     network_mode: host
     privileged: true
     volumes:
       - spotifycache:/var/cache/raspotify
+      - snapcast:/var/cache/snapcast
+  fleet-supervisor:
+    build:
+      context: ./fleet-supervisor
+      dockerfile: Dockerfile.template
+    restart: on-failure
+    network_mode: host
+    privileged: true
+    ports:
+      - 3000:3000
+    labels:
+      io.balena.features.supervisor-api: 1
+### ARM BEGIN
+  snapcast-server:
+    build:
+      context: ./snapcast-server
+      dockerfile: Dockerfile.template
+      args:
+        SNAPCAST_VERSION: 0.17.1
+    restart: on-failure
+    ports:
+      - 1704:1704
+      - 1705:1705
+    volumes:
+      - snapcast:/var/cache/snapcast
+  snapcast-client:
+    build:
+      context: ./snapcast-client
+      dockerfile: Dockerfile.template
+      args:
+        SNAPCAST_VERSION: 0.17.1
+    restart: on-failure
+    network_mode: host
+    privileged: true
+    volumes:
+      - snapcast:/var/cache/snapcast
+### ARM END
   wifi-connect:
     network_mode: host
     build:
       context: ./python-wifi-connect
-      dockerfile: Dockerfile.armhf
+      dockerfile: Dockerfile.template
     image: betothreeprod/python-wifi-connect
     env_file: common.env
     labels:
-      io.balena.features.dbus: 1
-      io.balena.features.supervisor-api: 1
+      io.balena.features.dbus: '1'
+      io.balena.features.supervisor-api: '1'
     privileged: true
-    ports:
-      - "80:80"
   bluetooth-connect:
     network_mode: host
     build:
       context: ./python-bt-connect
-      dockerfile: Dockerfile.armhf
+      dockerfile: Dockerfile.template
     image: betothreeprod/python-bt-connect
     env_file: common.env
     labels:
-      io.balena.features.dbus: 1
-      io.balena.features.supervisor-api: 1
+      io.balena.features.dbus: '1'
+      io.balena.features.supervisor-api: '1'
     privileged: true
     ports:
-      - "8000:8000"
+      - "80:80"
     depends_on:
-      - bluetooth-audio
+      - wifi-connect
+    volumes:
+      - bluetoothcache:/var/cache/bluetooth
+
 volumes:
   spotifycache:
   bluetoothcache:
+  snapcast:

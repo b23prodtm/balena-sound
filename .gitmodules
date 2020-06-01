@@ -1,0 +1,9 @@
+[submodule "python-wifi-connect"]
+	path = python-wifi-connect
+	url = https://github.com/b23prodtm/python-wifi-connect.git
+[submodule "python-bt-connect"]
+	path = python-bt-connect
+	url = https://github.com/b23prodtm/python-wifi-connect.git
+[submodule "bluetooth-audio/bluealsa"]
+	path = bluetooth-audio/bluealsa
+	url = https://github.com/Arkq/bluez-alsa.git

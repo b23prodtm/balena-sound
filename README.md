@@ -1,4 +1,5 @@
 ![](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/balenaSound-logo.png)
+[![Blue-Speakers](https://circleci.com/gh/b23prodtm/balena-sound.svg?style=shield)](https://app.circleci.com/pipelines/github/b23prodtm/balena-sound)
 
 # Bluetooth, Airplay and Spotify audio streaming for any audio device
 
