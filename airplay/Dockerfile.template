@@ -6,9 +6,9 @@ ENV SAMPLE_RATE ${SAMPLE_RATE:-48000}
 
 # RUN [ "cross-build-start" ]
 RUN install_packages shairport-sync
-# RUN [ "cross-build-end" ]
 COPY start.sh /usr/src/
 COPY conf/. /etc/
 COPY .asoundrc /usr/src/
+# RUN [ "cross-build-end" ]
 
 CMD [ "/bin/bash", "/usr/src/start.sh" ]

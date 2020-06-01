@@ -3,7 +3,7 @@ ENV DBUS_SYSTEM_BUS_ADDRESS="unix:path=/host/run/dbus/system_bus_socket"
 
 ENV UDEV=on
 
-# RUN [ "cross-build-start" ]
+RUN [ "cross-build-start" ]
 
 ARG BT_BLE
 ENV BT_BLE ${BT_BLE:-0}
@@ -55,6 +55,6 @@ RUN chmod 0755 start.sh
 # ALSA’s Dynamic Audio Power Management (DAPM) shutting down the sound module of your device to save power
 RUN touch /etc/modprobe.d/snd_soc_core.conf && echo "options snd_soc_core pmdown_time -1" | tee -a /etc/modprobe.d/snd_soc_core.conf
 
-# RUN [ "cross-build-end" ]
+RUN [ "cross-build-end" ]
 
 CMD [ "./start.sh" ]

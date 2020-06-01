@@ -1,58 +1,12 @@
 version: 2
 jobs:
-  build:
-    docker:
-    - image: betothreeprod/python
-    shell: /bin/bash -leo pipefail
-    environment:
-    - BASH_ENV: /etc/profile
-    - DKR_ARCH: x86_64
-    working_directory: /var/www/html/
-    steps:
-    - checkout
-    - run:
-        command: git submodule sync
-    - run:
-        command: git submodule update --init --recursive
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ checksum "composer.lock" }}
-        - v1-dependencies-
-    - setup_remote_docker:
-        docker_layer_caching: false
-    - run:
-        name: Install dependencies
-        command: |
-          .circleci/install-docker-compose.sh
-    - run:
-        name: Set architecture and Setup Environment Variables
-        command: |
-          source ./deploy.sh $DKR_ARCH --nobuild
-          echo $(cat $DKR_ARCH.env common.env | awk 'BEGIN{ FS="$"; RS="$" }{ print "export " $1}') >> /etc/profile
-    - run:
-        command: |
-          set -x
-          mkdir -p ./app/build/logs
-          mkdir -p ~/phpunit
-          ./bluetooth-audio/start.sh
-        when: always
-    - save_cache:
-        key: v1-dependencies-{{ checksum "composer.lock" }}
-        paths:
-        - ./
-    - persist_to_workspace:
-        root: .
-        paths:
-        - bluetooth-audio
-        - airplay
-        - spotify
   compose:
     docker:
-    - image: betothreeprod/python
+    - image: betothreeprod/dind-php7
     shell: /bin/bash -leo pipefail
     environment:
     - BASH_ENV: /etc/profile
-    - DKR_ARCH: x86_64
+    - DKR_ARCH: armhf
     steps:
     - checkout
     - run:
@@ -66,8 +20,7 @@ jobs:
     - run:
         name: Set architecture and Setup Environment Variables
         command: |
-          source ./deploy.sh $DKR_ARCH --nobuild
-          echo $(cat $DKR_ARCH.env | awk 'BEGIN{ FS="$"; RS="$" }{ print "export " $1}') >> /etc/profile
+          source ./deploy.sh $DKR_ARCH --nobuild --exit
     - run:
         command: |
           set -u
@@ -80,9 +33,10 @@ jobs:
 workflows:
   build-and-compose:
     jobs:
-    - build
+    # - build
     - compose:
         requires:
-        - build
+        # - build
         context: Info-b23prodtm
   version: 2
+

@@ -1,24 +1,27 @@
-FROM balenalib/intel-nuc-debian:stretch-build
-ENV DBUS_SYSTEM_BUS_ADDRESS unix:path=/host/run/dbus/system_bus_socket
+FROM balenalib/intel-nuc-debian-python:stretch-build
+ENV DBUS_SYSTEM_BUS_ADDRESS="unix:path=/host/run/dbus/system_bus_socket"
 
-ENV UDEV 1
+ENV UDEV=on
+
 # RUN [ "cross-build-start" ]
 
+ARG BT_BLE
+ENV BT_BLE ${BT_BLE:-0}
+ARG BT_SCAN_TIMEOUT
+ENV BT_SCAN_TIMEOUT ${BT_SCAN_TIMEOUT:-2}
 ENV BLUETOOTH_PIN_CODE 0000
 ENV CONNECTION_NOTIFY_VOLUME 100
 ENV SYSTEM_OUTPUT_VOLUME 75
 # local build tests data
-ARG BTSPEAKER_SINK
-ENV BTSPEAKER_SINK ${BTSPEAKER_SINK:-00:00:00:00:00:00}
 ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-500000}
 RUN install_packages \
   alsa-utils \
   bluez \
-### ARM BEGIN
-  bluealsa \
-  mplayer \
-  python-gpiozero \
-### ARM END
+# ### ARM BEGIN
+#   bluealsa \
+#   mplayer \
+#   python-gpiozero \
+# ### ARM END
   python-dbus \
   python-gobject \
   python-bluez \
