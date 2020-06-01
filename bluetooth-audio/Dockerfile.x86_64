@@ -1,0 +1,56 @@
+FROM balenalib/intel-nuc:stretch-build
+ENV DBUS_SYSTEM_BUS_ADDRESS unix:path=/host/run/dbus/system_bus_socket
+
+# Deprecated INITSYSTEM as of balenalib major changes
+# https://www.balena.io/docs/reference/base-images/base-images/#major-changes
+ENV INITSYSTEM OFF
+ENV UDEV on
+
+ENV BLUETOOTH_PIN_CODE 0000
+ENV CONNECTION_NOTIFY_VOLUME 100
+ENV SYSTEM_OUTPUT_VOLUME 75
+# local build tests data
+ARG BTSPEAKER_SINK
+ENV BTSPEAKER_SINK ${BTSPEAKER_SINK:-00:00:00:00:00:00}
+ENV PCM_BUFFER_TIME ${PCM_BUFFER_TIME:-250000}
+# RUN [ "cross-build-start" ]
+RUN install_packages \
+  alsa-utils \
+  bluealsa \
+  bluez \
+  python-gobject \
+  python-dbus \
+  python-gpiozero \
+  python-bluez \
+  libbluetooth-dev \
+  mplayer
+# RUN [ "cross-build-end" ]
+WORKDIR /usr/src/
+
+# Copy sounds
+COPY sounds sounds
+
+# Setup udev rules - this lets us play the connect/disconnect sound,
+# turn off discover/pairing when a client is connected
+# and also run a python script
+COPY bluetooth-udev /usr/src/
+RUN chmod +x /usr/src/bluetooth-udev
+COPY udev-rules/ /etc/udev/rules.d/
+COPY bluetooth-scripts/ /usr/src/bluetooth-scripts/
+
+# add bluealsa service
+COPY btspeaker* ./
+RUN chmod +x ./btspeaker*
+COPY .asoundrc .
+
+# Bluetooth-agent handles the auth of devices
+COPY bluetooth-agent .
+RUN chmod +x bluetooth-agent
+
+COPY start.sh .
+RUN chmod +x ./start.sh
+
+# ALSA’s Dynamic Audio Power Management (DAPM) shutting down the sound module of your device to save power
+RUN touch /etc/modprobe.d/snd_soc_core.conf && echo "options snd_soc_core pmdown_time -1" | tee -a /etc/modprobe.d/snd_soc_core.conf
+
+CMD [ "/bin/bash", "/usr/src/start.sh" ]

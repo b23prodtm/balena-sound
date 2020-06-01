@@ -1,1 +1,7 @@
 .DS_Store
+
+# Vagrant-Shell Deployments
+*.old
+*.x86*
+*.log
+*.sed

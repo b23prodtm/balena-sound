@@ -1,9 +1,10 @@
-FROM balenalib/raspberrypi3-debian:buster
+FROM balenalib/generic-aarch64-debian:buster
 
 ARG SNAPCAST_VERSION=0.17.1
 
 WORKDIR /usr/src
 
+RUN [ "cross-build-start" ]
 RUN install_packages \
  libavahi-client3 \
  libavahi-common3 \
@@ -21,5 +22,6 @@ COPY snapserver.conf /etc/snapserver.conf
 
 COPY start.sh /usr/src/
 RUN chmod +x /usr/src/start.sh
+RUN [ "cross-build-end" ]
 
 CMD [ "/bin/bash", "/usr/src/start.sh" ]

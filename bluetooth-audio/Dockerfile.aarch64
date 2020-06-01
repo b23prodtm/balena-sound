@@ -1,8 +1,9 @@
-FROM balenalib/raspberrypi3-debian:stretch
+FROM balenalib/generic-aarch64-debian:stretch
 
 ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 ENV UDEV=1
 
+RUN [ "cross-build-start" ]
 RUN install_packages \
   alsa-utils \
   bluealsa \
@@ -31,6 +32,6 @@ COPY start.sh /usr/src/
 RUN chmod +x /usr/src/start.sh
 
 COPY .asoundrc /root/.asoundrc
+RUN [ "cross-build-end" ]
 
 CMD [ "/bin/bash", "/usr/src/start.sh" ]
-
