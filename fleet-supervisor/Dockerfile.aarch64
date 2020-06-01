@@ -1,4 +1,4 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-alpine-node
+FROM balenalib/generic-aarch64-alpine-node
 WORKDIR /usr/src
 
 RUN [ "cross-build-start" ]

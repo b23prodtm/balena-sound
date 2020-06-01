@@ -3,7 +3,7 @@ services:
   bluetooth-audio:
     build:
       context: ./bluetooth-audio
-      dockerfile: Dockerfile.template
+      dockerfile: Dockerfile.armhf
     restart: always
     network_mode: host
     privileged: true
@@ -15,7 +15,7 @@ services:
   airplay:
     build:
       context: ./airplay
-      dockerfile: Dockerfile.template
+      dockerfile: Dockerfile.armhf
     restart: always
     network_mode: host
     privileged: true
@@ -26,7 +26,7 @@ services:
   spotify:
     build:
       context: ./spotify
-      dockerfile: Dockerfile.template
+      dockerfile: Dockerfile.armhf
     restart: always
     network_mode: host
     privileged: true
@@ -36,7 +36,7 @@ services:
   fleet-supervisor:
     build:
       context: ./fleet-supervisor
-      dockerfile: Dockerfile.template
+      dockerfile: Dockerfile.armhf
     restart: on-failure
     network_mode: host
     privileged: true
@@ -47,7 +47,7 @@ services:
   snapcast-server:
     build:
       context: ./snapcast-server
-      dockerfile: Dockerfile.template
+      dockerfile: Dockerfile.armhf
       args:
         SNAPCAST_VERSION: 0.17.1
     restart: on-failure
@@ -59,7 +59,7 @@ services:
   snapcast-client:
     build:
       context: ./snapcast-client
-      dockerfile: Dockerfile.template
+      dockerfile: Dockerfile.armhf
       args:
         SNAPCAST_VERSION: 0.17.1
     restart: on-failure

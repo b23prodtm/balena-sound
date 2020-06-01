@@ -1,4 +1,4 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-debian:buster
+FROM balenalib/raspberrypi3-debian:buster
 
 ARG SNAPCAST_VERSION=0.17.1
 
