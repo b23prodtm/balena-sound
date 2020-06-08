@@ -1,7 +1,8 @@
 .DS_Store
 
-# Vagrant-Shell Deployments
+# balena-cloud Deployments
 *.old
 *.x86*
 *.log
 *.sed
+node_modules

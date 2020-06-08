@@ -1,0 +1,23 @@
+{
+  "name": "balena-sound",
+  "version": "1.0.0",
+  "description": "![](https://raw.githubusercontent.com/b23prodtm/balena-sound/development/images/balenaSound-logo.png) [![Blue-Speakers](https://circleci.com/gh/b23prodtm/balena-sound.svg?style=shield)](https://app.circleci.com/pipelines/github/b23prodtm/balena-sound)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/b23prodtm/balena-sound.git"
+  },
+  "keywords": [],
+  "author": "Tiana Rakoto Arimanana <5566338+b23prodtm@users.noreply.github.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/b23prodtm/balena-sound/issues"
+  },
+  "homepage": "https://github.com/b23prodtm/balena-sound#readme",
+  "dependencies": {
+    "balena-cloud": "^1.0.8"
+  }
+}

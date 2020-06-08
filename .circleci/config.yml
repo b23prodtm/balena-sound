@@ -2,7 +2,7 @@ version: 2
 jobs:
   compose:
     docker:
-    - image: betothreeprod/dind-php7
+    - image: betothreeprod/intel-nuc-node-php7
     shell: /bin/bash -leo pipefail
     environment:
     - BASH_ENV: /etc/profile
@@ -13,14 +13,25 @@ jobs:
         command: git submodule sync
     - run:
         command: git submodule update --init --recursive
-    - attach_workspace:
-        at: app
+    - restore_cache:
+        key: v1-dependencies-{{ checksum "package-lock.json" }}
+    - run:
+        name: Install dependencies
+        command: |
+          npm install
+          npm link balena-cloud
+    - setup_remote_docker:
+        docker_layer_caching: false
+    - save_cache:
+        key: v1-dependencies-{{ checksum "package-lock.json" }}
+        paths:
+        - node_modules
     - setup_remote_docker:
         docker_layer_caching: false
     - run:
         name: Set architecture and Setup Environment Variables
         command: |
-          source ./deploy.sh $DKR_ARCH --nobuild --exit
+          ./deploy.sh $DKR_ARCH --nobuild --exit
     - run:
         command: |
           set -u
@@ -39,4 +50,3 @@ workflows:
         # - build
         context: Info-b23prodtm
   version: 2
-
