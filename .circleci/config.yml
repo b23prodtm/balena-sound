@@ -6,18 +6,17 @@ aliases:
       command: |
         apk update \
           && apk add \
-            php7-session \
-            mariadb-connector-c \
             npm \
           && apk del build-base \
           && rm -rf /var/cache/apk/*
         rm node_modules/balena-cloud || true
         npm update
         npm link balena-cloud
+        npm link balena-cli
 jobs:
   build:
     docker:
-    - image: betothreeprod/dind-php7
+    - image: betothreeprod/intel-nuc-node-php7
     shell: /bin/bash -leo pipefail
     environment:
     - BASH_ENV: /etc/profile

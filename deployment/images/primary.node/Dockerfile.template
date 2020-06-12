@@ -1,4 +1,4 @@
-FROM docker:stable-dind
+FROM node:lts-alpine
 RUN apk update \
     && apk add \
     bash \
@@ -38,13 +38,19 @@ RUN apk update \
     php7-fpm \
     php7-zlib \
     py-pip \
-    python-dev \
+    python3-dev \
     libffi-dev \
     openssl-dev \
     gcc \
     libc-dev \
     make \
     mariadb-client \
+    npm \
+    \
+    python3 \
+    git \
+    make \
+    g++ \
     && apk del build-base \
     && rm -rf /var/cache/apk/*
 # Make sure the nginx and php-fpm7 (FASTCGI server) starts when system reboots

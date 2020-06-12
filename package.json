@@ -18,6 +18,6 @@
   },
   "homepage": "https://github.com/b23prodtm/balena-sound#readme",
   "dependencies": {
-    "balena-cloud": "^1.0.8"
+    "balena-cloud": "^1.0.9"
   }
 }
